@@ -98,6 +98,12 @@
     <Filter Include="FreeRTOS+\FreeRTOS IoT Libraries\platform\transport\include">
       <UniqueIdentifier>{ded2b563-424b-401d-b14d-d790c2a29f66}</UniqueIdentifier>
     </Filter>
+    <Filter Include="unity">
+      <UniqueIdentifier>{1bf33e94-32c6-44d6-a804-40f1d7670ad1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FreeRTOS-Libraries-Integration-Tests">
+      <UniqueIdentifier>{f702bd7d-1ab3-4cbe-b335-6bf388033f9c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\FreeRTOS\Source\portable\MSVC-MingW\port.c">
@@ -526,6 +532,21 @@
     <ClCompile Include="..\..\..\Source\Application-Protocols\network_transport\using_mbedtls\using_mbedtls.c">
       <Filter>FreeRTOS+\FreeRTOS IoT Libraries\platform\transport</Filter>
     </ClCompile>
+    <ClCompile Include="..\FreeRTOS-Libraries-Integration-Tests\src\qualification_test.c">
+      <Filter>FreeRTOS-Libraries-Integration-Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\FreeRTOS-Libraries-Integration-Tests\src\transport_interface\transport_interface_test.c">
+      <Filter>FreeRTOS-Libraries-Integration-Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Unity\src\unity.c">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Unity\extras\fixture\src\unity_fixture.c">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Unity\extras\memory\src\unity_memory.c">
+      <Filter>unity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\FreeRTOS\Source\include\timers.h">
@@ -938,6 +959,39 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Application-Protocols\network_transport\using_mbedtls\using_mbedtls.h">
       <Filter>FreeRTOS+\FreeRTOS IoT Libraries\platform\transport\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\qualification_test.h">
+      <Filter>FreeRTOS-Libraries-Integration-Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\test_execution_config.h">
+      <Filter>FreeRTOS-Libraries-Integration-Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\test_param_config.h">
+      <Filter>FreeRTOS-Libraries-Integration-Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\transport_interface\transport_interface_test.h">
+      <Filter>FreeRTOS-Libraries-Integration-Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\common\network_connection.h">
+      <Filter>FreeRTOS-Libraries-Integration-Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\common\platform_function.h">
+      <Filter>FreeRTOS-Libraries-Integration-Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Unity\src\unity.h">
+      <Filter>unity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Unity\src\unity_internals.h">
+      <Filter>unity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Unity\extras\fixture\src\unity_fixture.h">
+      <Filter>unity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Unity\extras\fixture\src\unity_fixture_internals.h">
+      <Filter>unity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Unity\extras\memory\src\unity_memory.h">
+      <Filter>unity</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

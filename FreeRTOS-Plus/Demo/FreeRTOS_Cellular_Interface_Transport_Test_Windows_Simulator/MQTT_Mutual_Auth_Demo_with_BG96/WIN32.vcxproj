@@ -58,7 +58,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;..\common;..\..\common\WinPCap;..\..\..\..\Source\FreeRTOS-Plus-Trace\Include;..\..\..\..\Source\mbedtls_utils;..\..\..\Source\Application-Protocols\coreMQTT\source\interface;..\..\..\Source\Application-Protocols\coreMQTT\source\include;..\..\..\Source\Application-Protocols\network_transport\cellular;..\..\..\Source\Utilities\backoff_algorithm\source\include;..\..\..\Source\Utilities\mbedtls_freertos;..\..\..\..\FreeRTOS-Plus\Source\FreeRTOS-Plus-TCP\include;..\..\..\..\FreeRTOS-Plus\Source\FreeRTOS-Plus-TCP\portable\BufferManagement;..\..\..\..\FreeRTOS-Plus\Source\FreeRTOS-Plus-TCP\portable\Compiler\MSVC;..\..\..\..\FreeRTOS-Plus\Source\Utilities\logging;..\..\..\..\FreeRTOS\Source\include;..\..\..\..\FreeRTOS\Source\portable\MSVC-MingW;..\..\..\ThirdParty\mbedtls\include;..\..\..\Source\FreeRTOS-Cellular-Interface\source\include;..\..\..\Source\FreeRTOS-Cellular-Interface\source\include\common;..\..\..\Source\FreeRTOS-Cellular-Interface\source\include\private;..\..\..\Source\FreeRTOS-Cellular-Interface\source\interface;..\..\..\Source\Application-Protocols\network_transport\using_mbedtls;..\..\..\Source\Application-Protocols\network_transport\sockets_wrapper\cellular;.\FreeRTOS-Libraries-Integration-Tests\src;.\FreeRTOS-Libraries-Integration-Tests\src\common;.\FreeRTOS-Libraries-Integration-Tests\src\transport_interface;.\Unity\src;.\Unity\extras\fixture\src;.\Unity\extras\memory\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\common;..\..\common\WinPCap;..\..\..\..\Source\FreeRTOS-Plus-Trace\Include;..\..\..\..\Source\mbedtls_utils;..\..\..\Source\Application-Protocols\coreMQTT\source\interface;..\..\..\Source\Application-Protocols\coreMQTT\source\include;..\..\..\Source\Application-Protocols\network_transport\cellular;..\..\..\Source\Utilities\backoff_algorithm\source\include;..\..\..\Source\Utilities\mbedtls_freertos;..\..\..\..\FreeRTOS-Plus\Source\FreeRTOS-Plus-TCP\include;..\..\..\..\FreeRTOS-Plus\Source\FreeRTOS-Plus-TCP\portable\BufferManagement;..\..\..\..\FreeRTOS-Plus\Source\FreeRTOS-Plus-TCP\portable\Compiler\MSVC;..\..\..\..\FreeRTOS-Plus\Source\Utilities\logging;..\..\..\..\FreeRTOS\Source\include;..\..\..\..\FreeRTOS\Source\portable\MSVC-MingW;..\..\..\ThirdParty\mbedtls\include;..\..\..\Source\FreeRTOS-Cellular-Interface\source\include;..\..\..\Source\FreeRTOS-Cellular-Interface\source\include\common;..\..\..\Source\FreeRTOS-Cellular-Interface\source\include\private;..\..\..\Source\FreeRTOS-Cellular-Interface\source\interface;..\..\..\Source\Application-Protocols\network_transport\using_mbedtls;..\..\..\Source\Application-Protocols\network_transport\sockets_wrapper\cellular;..\FreeRTOS-Libraries-Integration-Tests\src;..\FreeRTOS-Libraries-Integration-Tests\src\common;..\FreeRTOS-Libraries-Integration-Tests\src\transport_interface;..\Unity\src;..\Unity\extras\fixture\src;..\Unity\extras\memory\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>MBEDTLS_CONFIG_FILE="mbedtls_config.h";WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x0500;WINVER=0x400;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -565,12 +565,12 @@
     <ClCompile Include="..\Common\cellular_setup.c" />
     <ClCompile Include="..\Common\comm_if_windows.c" />
     <ClCompile Include="..\Common\main.c" />
+    <ClCompile Include="..\FreeRTOS-Libraries-Integration-Tests\src\qualification_test.c" />
+    <ClCompile Include="..\FreeRTOS-Libraries-Integration-Tests\src\transport_interface\transport_interface_test.c" />
+    <ClCompile Include="..\Unity\extras\fixture\src\unity_fixture.c" />
+    <ClCompile Include="..\Unity\extras\memory\src\unity_memory.c" />
+    <ClCompile Include="..\Unity\src\unity.c" />
     <ClCompile Include="aws_unity_port.c" />
-    <ClCompile Include="FreeRTOS-Libraries-Integration-Tests\src\qualification_test.c" />
-    <ClCompile Include="FreeRTOS-Libraries-Integration-Tests\src\transport_interface\transport_interface_test.c" />
-    <ClCompile Include="Unity\extras\fixture\src\unity_fixture.c" />
-    <ClCompile Include="Unity\extras\memory\src\unity_memory.c" />
-    <ClCompile Include="Unity\src\unity.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\FreeRTOS\Source\include\event_groups.h" />
@@ -702,23 +702,23 @@
     <ClInclude Include="..\..\..\ThirdParty\mbedtls\include\mbedtls\x509_csr.h" />
     <ClInclude Include="..\..\..\ThirdParty\mbedtls\include\mbedtls\xtea.h" />
     <ClInclude Include="..\Common\cellular_platform.h" />
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\common\network_connection.h" />
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\common\platform_function.h" />
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\qualification_test.h" />
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\test_execution_config.h" />
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\test_param_config.h" />
+    <ClInclude Include="..\FreeRTOS-Libraries-Integration-Tests\src\transport_interface\transport_interface_test.h" />
+    <ClInclude Include="..\Unity\extras\fixture\src\unity_fixture.h" />
+    <ClInclude Include="..\Unity\extras\fixture\src\unity_fixture_internals.h" />
+    <ClInclude Include="..\Unity\extras\memory\src\unity_memory.h" />
+    <ClInclude Include="..\Unity\src\unity.h" />
+    <ClInclude Include="..\Unity\src\unity_internals.h" />
     <ClInclude Include="cellular_config.h" />
-    <ClInclude Include="FreeRTOS-Libraries-Integration-Tests\src\common\network_connection.h" />
-    <ClInclude Include="FreeRTOS-Libraries-Integration-Tests\src\common\platform_function.h" />
-    <ClInclude Include="FreeRTOS-Libraries-Integration-Tests\src\qualification_test.h" />
-    <ClInclude Include="FreeRTOS-Libraries-Integration-Tests\src\test_execution_config.h" />
-    <ClInclude Include="FreeRTOS-Libraries-Integration-Tests\src\test_param_config.h" />
-    <ClInclude Include="FreeRTOS-Libraries-Integration-Tests\src\transport_interface\transport_interface_test.h" />
     <ClInclude Include="mbedtls_config.h" />
     <ClInclude Include="demo_config.h" />
     <ClInclude Include="FreeRTOSConfig.h" />
     <ClInclude Include="FreeRTOSIPConfig.h" />
     <ClInclude Include="core_mqtt_config.h" />
-    <ClInclude Include="Unity\extras\fixture\src\unity_fixture.h" />
-    <ClInclude Include="Unity\extras\fixture\src\unity_fixture_internals.h" />
-    <ClInclude Include="Unity\extras\memory\src\unity_memory.h" />
-    <ClInclude Include="Unity\src\unity.h" />
-    <ClInclude Include="Unity\src\unity_internals.h" />
     <ClInclude Include="unity_config.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

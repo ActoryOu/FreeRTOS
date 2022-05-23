@@ -586,12 +586,25 @@ static bool _calculateElapsedTime( uint64_t entryTimeMs,
 
 /*-----------------------------------------------------------*/
 
+#if defined __IS_BG96__
 char* sockInfoBuf[1024];
 /* Callback function to read socket info */
 CellularPktStatus_t querySockInfoCallback( CellularHandle_t cellularHandle, const CellularATCommandResponse_t* pAtResp, void* pData, uint16_t dataLen )
 {
+    /* BG96 */
     printf("Socket info response=%s\n", pAtResp->pItm->pLine);
 }
+#endif //#if defined __IS_BG96__
+
+#if defined __IS_HL7802__
+char* sockInfoBuf[1024];
+/* Callback function to read socket info */
+CellularPktStatus_t querySockInfoCallback(CellularHandle_t cellularHandle, const CellularATCommandResponse_t* pAtResp, void* pData, uint16_t dataLen)
+{
+    /* BG96 */
+    printf("Socket info response=%s\n", pAtResp->pItm->pLine);
+}
+#endif /* #if defined __IS_HL7802__ */
 
 BaseType_t Sockets_Connect( Socket_t * pTcpSocket,
                             const char * pHostName,
@@ -743,6 +756,7 @@ BaseType_t Sockets_Connect( Socket_t * pTcpSocket,
         }
     }
 
+#if defined __IS_BG96__
     /* Query socket info. */
     if (retConnect == SOCKETS_ERROR_NONE)
     {
@@ -751,6 +765,7 @@ BaseType_t Sockets_Connect( Socket_t * pTcpSocket,
 
         cellularSocketStatus = Cellular_ATCommandRaw( CellularHandle, "+QISTATE", &buf, CELLULAR_AT_WITH_PREFIX, querySockInfoCallback, &sockInfoBuf, 1024);
     }
+#endif /* #if defined __IS_BG96__ */
 
     /* Cleanup the socket if any error. */
     if( retConnect != SOCKETS_ERROR_NONE )

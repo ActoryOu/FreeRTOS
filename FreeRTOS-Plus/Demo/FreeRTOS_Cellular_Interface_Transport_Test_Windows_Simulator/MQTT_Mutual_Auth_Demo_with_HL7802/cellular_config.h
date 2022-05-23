@@ -84,6 +84,7 @@ extern void vLoggingPrintf( const char * pcFormatString,
  * Default APN for network registration.
  * #define CELLULAR_APN                    "...insert here..."
  */
+#define CELLULAR_APN                    "internet"
 
 /*
  * PDN context id for cellular network.

@@ -586,6 +586,13 @@ static bool _calculateElapsedTime( uint64_t entryTimeMs,
 
 /*-----------------------------------------------------------*/
 
+char* sockInfoBuf[1024];
+/* Callback function to read socket info */
+CellularPktStatus_t querySockInfoCallback( CellularHandle_t cellularHandle, const CellularATCommandResponse_t* pAtResp, void* pData, uint16_t dataLen )
+{
+    printf("Socket info response=%s\n", pAtResp->pItm->pLine);
+}
+
 BaseType_t Sockets_Connect( Socket_t * pTcpSocket,
                             const char * pHostName,
                             uint16_t port,
@@ -600,6 +607,7 @@ BaseType_t Sockets_Connect( Socket_t * pTcpSocket,
     EventBits_t waitEventBits = 0;
     BaseType_t retConnect = SOCKETS_ERROR_NONE;
     const uint32_t defaultReceiveTimeoutMs = CELLULAR_SOCKET_RECV_TIMEOUT_MS;
+    const uint16_t defaultLocalPort = 12345;
 
     /* Create a new TCP socket. */
     cellularSocketStatus = Cellular_CreateSocket( CellularHandle,
@@ -677,6 +685,23 @@ BaseType_t Sockets_Connect( Socket_t * pTcpSocket,
         }
     }
 
+    /* Setup cellular socket local port. */
+    if (retConnect == SOCKETS_ERROR_NONE)
+    {
+        cellularSocketStatus = Cellular_SocketSetSockOpt(CellularHandle,
+            cellularSocketHandle,
+            CELLULAR_SOCKET_OPTION_LEVEL_TRANSPORT,
+            CELLULAR_SOCKET_OPTION_SET_LOCAL_PORT,
+            (const uint16_t*)&defaultLocalPort,
+            sizeof(uint16_t));
+
+        if (cellularSocketStatus != CELLULAR_SUCCESS)
+        {
+            IotLogError("Failed to setup cellular local port %d.", cellularSocketStatus);
+            retConnect = SOCKETS_SOCKET_ERROR;
+        }
+    }
+
     /* Setup cellular socket send/recv timeout. */
     if( retConnect == SOCKETS_ERROR_NONE )
     {
@@ -716,6 +741,15 @@ BaseType_t Sockets_Connect( Socket_t * pTcpSocket,
             IotLogError( "Socket connect timeout." );
             retConnect = SOCKETS_ENOTCONN;
         }
+    }
+
+    /* Query socket info. */
+    if (retConnect == SOCKETS_ERROR_NONE)
+    {
+        char* buf[1024];
+        snprintf( &buf, 1024, "AT+QISTATE=0,%d", CellularSocketPdnContextId);
+
+        cellularSocketStatus = Cellular_ATCommandRaw( CellularHandle, "+QISTATE", &buf, CELLULAR_AT_WITH_PREFIX, querySockInfoCallback, &sockInfoBuf, 1024);
     }
 
     /* Cleanup the socket if any error. */

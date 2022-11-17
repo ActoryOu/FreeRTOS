@@ -6,6 +6,10 @@ project ( "FreeRTOS-Kernel Static analysis"
           VERSION 1.0.0
           LANGUAGES C )
 
+# Options to choose FreeRTOS configuration file
+option(COVERITY_MULTI_CORE1_CONFIG "Multiple Core 1 Config" OFF)
+option(COVERITY_MULTI_CORE2_CONFIG "Multiple Core 2 Config" OFF)
+
 # Allow the project to be organized into folders.
 set_property( GLOBAL PROPERTY USE_FOLDERS ON )
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -21,7 +25,7 @@ endif()
 
 # Set global path variables.
 get_filename_component(__MODULE_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
-set( MODULE_ROOT_DIR ${__MODULE_ROOT_DIR} CACHE INTERNAL "FreeRTOS-Kernel repository root." )
+set( MODULE_ROOT_DIR ${__MODULE_ROOT_DIR} CACHE INTERNAL "FreeRTOS repository root." )
 
 # Set the kernel directory
 set( KERNEL_DIRECTORY ${MODULE_ROOT_DIR}/FreeRTOS/Source )
@@ -40,6 +44,17 @@ file( GLOB KERNEL_SOURCES
 
 message( STATUS "KERNEL_SOURCES are ${KERNEL_SOURCES}" )
 
+if( COVERITY_MULTI_CORE1_CONFIG )
+    file( GLOB FREERTOS_CONFIG_INCLUDE
+          ${CMAKE_CURRENT_LIST_DIR}/MultiCore1Config )
+elseif( COVERITY_MULTI_CORE2_CONFIG )
+    file( GLOB FREERTOS_CONFIG_INCLUDE
+          ${CMAKE_CURRENT_LIST_DIR}/MultiCore2Config )
+else()
+    file( GLOB FREERTOS_CONFIG_INCLUDE
+          ${CMAKE_CURRENT_LIST_DIR}/SingleCoreConfig )
+endif()
+
 # A better way would be to create a library such that all other dependencies are
 # ignored by the static analysis tool. But, since +TCP is very closely linked
 # with the FreeRTOS-Kernel, an executable had to be created.
@@ -51,7 +66,7 @@ add_executable( StaticAnalysis ${KERNEL_SOURCES}
 # Link the include directories with the target
 target_include_directories( StaticAnalysis
                             PUBLIC "${KERNEL_DIRECTORY}/include"
-                            PUBLIC "${CMAKE_CURRENT_LIST_DIR}/ConfigFiles" )
+                            PUBLIC "${FREERTOS_CONFIG_INCLUDE}" )
 
 # Uncomment the below line if the desired platform is 32-bit
 set_target_properties( StaticAnalysis PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32" )

@@ -56,6 +56,7 @@ void vPortFree( void * pv )
 
 void vApplicationDaemonTaskStartupHook( void )
 {
+    return;
 }
 /*-----------------------------------------------------------*/
 
@@ -69,34 +70,27 @@ void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer,
 }
 /*-----------------------------------------------------------*/
 
-void vPortDeleteThread( void * pvTaskToDelete )
-{
-    ( void ) pvTaskToDelete;
-}
-
 void vApplicationIdleHook( void )
 {
+    return;
 }
 /*-----------------------------------------------------------*/
 
 void vApplicationTickHook( void )
 {
+    return;
 }
 /*-----------------------------------------------------------*/
 
 void vApplicationMallocFailedHook( void )
 {
-}
-/*-----------------------------------------------------------*/
-
-uint32_t ulGetRunTimeCounterValue( void )
-{
-    return 0;
+    return;
 }
 /*-----------------------------------------------------------*/
 
 void vPortEndScheduler( void )
 {
+    return;
 }
 /*-----------------------------------------------------------*/
 
@@ -106,23 +100,15 @@ BaseType_t xPortStartScheduler( void )
 }
 /*-----------------------------------------------------------*/
 
-void vPortEnterCritical( void )
-{
-}
-/*-----------------------------------------------------------*/
-
-void vPortExitCritical( void )
-{
-}
-/*-----------------------------------------------------------*/
-
 StackType_t * pxPortInitialiseStack( StackType_t * pxTopOfStack,
                                      TaskFunction_t pxCode,
-                                     void * pvParameters )
+                                     void * pvParameters,
+                                     BaseType_t xRunPrivileged )
 {
     ( void ) pxTopOfStack;
     ( void ) pxCode;
     ( void ) pvParameters;
+    ( void ) xRunPrivileged;
 
     return NULL;
 }
@@ -130,14 +116,7 @@ StackType_t * pxPortInitialiseStack( StackType_t * pxTopOfStack,
 
 void vPortGenerateSimulatedInterrupt()
 {
-}
-/*-----------------------------------------------------------*/
-
-void vPortCloseRunningThread( void * pvTaskToDelete,
-                              volatile BaseType_t * pxPendYield )
-{
-    ( void ) pvTaskToDelete;
-    ( void ) pxPendYield;
+    return;
 }
 /*-----------------------------------------------------------*/
 
@@ -151,7 +130,20 @@ void vApplicationGetIdleTaskMemory( StaticTask_t ** ppxIdleTaskTCBBuffer,
 }
 /*-----------------------------------------------------------*/
 
-void vConfigureTimerForRunTimeStats( void )
+void vPortStoreTaskMPUSettings( xMPU_SETTINGS * xMPUSettings,
+                                const struct xMEMORY_REGION * const xRegions,
+                                StackType_t * pxBottomOfStack,
+                                uint32_t ulStackDepth )
 {
+    ( void ) xMPUSettings;
+    ( void ) xRegions;
+    ( void ) pxBottomOfStack;
+    ( void ) ulStackDepth;
+}
+/*-----------------------------------------------------------*/
+
+TickType_t MPU_xTaskGetTickCount( void ) 
+{
+    return 0;
 }
 /*-----------------------------------------------------------*/

@@ -103,4 +103,12 @@ void vPortExitCritical( void );
 
 void vPortGenerateSimulatedInterrupt();
 
+/**
+ * @brief MPU settings as stored in the TCB.
+ */
+typedef struct MPU_SETTINGS
+{
+    uint32_t dummy;
+} xMPU_SETTINGS;
+
 #endif /* ifndef PORTMACRO_H */

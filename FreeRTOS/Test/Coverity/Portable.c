@@ -30,6 +30,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "list.h"
+#include "queue.h"
+#include "portable.h"
 
 volatile BaseType_t xInsideInterrupt = pdFALSE;
 uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
@@ -143,6 +145,43 @@ void vPortStoreTaskMPUSettings( xMPU_SETTINGS * xMPUSettings,
 /*-----------------------------------------------------------*/
 
 TickType_t MPU_xTaskGetTickCount( void ) 
+{
+    return 0;
+}
+/*-----------------------------------------------------------*/
+
+void vPortDefineHeapRegions( const HeapRegion_t * const pxHeapRegions )
+{
+
+}
+/*-----------------------------------------------------------*/
+
+void vPortGetHeapStats( HeapStats_t * pxHeapStats )
+{
+
+}
+/*-----------------------------------------------------------*/
+
+void * pvPortCalloc( size_t xNum,
+                     size_t xSize )
+{
+    return NULL;
+}
+/*-----------------------------------------------------------*/
+
+void vPortInitialiseBlocks( void )
+{
+
+}
+/*-----------------------------------------------------------*/
+
+size_t xPortGetFreeHeapSize( void )
+{
+    return 0;
+}
+/*-----------------------------------------------------------*/
+
+size_t xPortGetMinimumEverFreeHeapSize( void )
 {
     return 0;
 }

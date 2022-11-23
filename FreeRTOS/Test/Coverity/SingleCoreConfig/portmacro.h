@@ -69,10 +69,7 @@ typedef uint32_t         UBaseType_t;
 #endif
 
 #define portYIELD()    
-
-
-extern volatile BaseType_t xInsideInterrupt;
-#define portSOFTWARE_BARRIER()    while( xInsideInterrupt != pdFALSE )
+#define portSOFTWARE_BARRIER()
 
 
 /* Simulated interrupts return pdFALSE if no context switch should be performed,
@@ -86,14 +83,19 @@ extern volatile BaseType_t xInsideInterrupt;
 #define portENABLE_INTERRUPTS()                                    
 
 /* Critical section handling. */
-#define portENTER_CRITICAL()    
-#define portEXIT_CRITICAL()     
+extern void vTaskEnterCritical( void );
+extern void vTaskExitCritical( void );
+#define portENTER_CRITICAL()
+#define portEXIT_CRITICAL()
 
 /* Task function macros as described on the FreeRTOS.org WEB site. */
 #define portTASK_FUNCTION_PROTO( vFunction, pvParameters )    void vFunction( const void * pvParameters )
 #define portTASK_FUNCTION( vFunction, pvParameters )          void vFunction( const void * pvParameters )
 
 #define portINTERRUPT_YIELD    ( 0UL )
+
+configRUN_TIME_COUNTER_TYPE portGetRunTimeCounterValue( void );
+#define portGET_RUN_TIME_COUNTER_VALUE()         portGetRunTimeCounterValue()
 
 /**
  * @brief MPU settings as stored in the TCB.

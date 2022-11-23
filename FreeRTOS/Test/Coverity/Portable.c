@@ -122,6 +122,12 @@ void vPortGenerateSimulatedInterrupt()
 }
 /*-----------------------------------------------------------*/
 
+void portAssert()
+{
+    return;
+}
+/*-----------------------------------------------------------*/
+
 void vApplicationGetIdleTaskMemory( StaticTask_t ** ppxIdleTaskTCBBuffer,
                                     StackType_t ** ppxIdleTaskStackBuffer,
                                     uint32_t * pulIdleTaskStackSize )
@@ -152,19 +158,21 @@ TickType_t MPU_xTaskGetTickCount( void )
 
 void vPortDefineHeapRegions( const HeapRegion_t * const pxHeapRegions )
 {
-
+    ( void ) pxHeapRegions;
 }
 /*-----------------------------------------------------------*/
 
 void vPortGetHeapStats( HeapStats_t * pxHeapStats )
 {
-
+    ( void ) pxHeapStats;
 }
 /*-----------------------------------------------------------*/
 
 void * pvPortCalloc( size_t xNum,
                      size_t xSize )
 {
+    ( void ) xNum;
+    ( void ) xSize;
     return NULL;
 }
 /*-----------------------------------------------------------*/
@@ -186,3 +194,8 @@ size_t xPortGetMinimumEverFreeHeapSize( void )
     return 0;
 }
 /*-----------------------------------------------------------*/
+
+configRUN_TIME_COUNTER_TYPE portGetRunTimeCounterValue( void )
+{
+    return 100U;
+}

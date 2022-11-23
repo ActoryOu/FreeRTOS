@@ -30,6 +30,8 @@
 #define mtCOVERAGE_TEST_MARKER()  /* _asm will be reported by coverity */
 #define configASSERT( x ) /* assert will be reported by coverity */
 
+#define configRUN_TIME_COUNTER_TYPE    uint32_t
+
 /*-----------------------------------------------------------
 * Application specific definitions.
 *
@@ -41,7 +43,7 @@
 * http://www.freertos.org/a00110.html
 *----------------------------------------------------------*/
 
-#define configNUM_CORES                            1
+#define configNUM_CORES                            1U
 #define configUSE_CORE_AFFINITY                    1
 #define configUSE_MUTEXES                          1
 #define configUSE_MINIMAL_IDLE_HOOK                1
@@ -62,6 +64,7 @@
 #define INCLUDE_xTaskGetIdleTaskHandle             1
 #define portUSING_MPU_WRAPPERS                     1
 #define portCRITICAL_NESTING_IN_TCB                1
+#define portPRIVILEGE_BIT                          1U
 /* #define portGET_CORE_ID */
 /* #define portYIELD_CORE */
 /* #define portSET_INTERRUPT_MASK */
@@ -98,6 +101,7 @@
 #define configMESSAGE_BUFFER_LENGTH_TYPE           size_t
 #define configHEAP_CLEAR_MEMORY_ON_FREE            1
 #define configINITIAL_TICK_COUNT                   ( ( TickType_t ) 0 )
+#define configEXPECTED_IDLE_TIME_BEFORE_SLEEP      2U
 
 /* Memory allocation related definitions. */
 #define configTOTAL_HEAP_SIZE                      ( ( size_t ) ( 52 * 1024 ) )
@@ -159,6 +163,5 @@
 
 /* Run time stats gathering configuration options. */
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()    
-#define portGET_RUN_TIME_COUNTER_VALUE()         ( 0 )   
 
 #endif /* FREERTOS_CONFIG_H */

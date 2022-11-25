@@ -27,9 +27,10 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
-/* #define projCOVERAGE_TEST 1  /* disable the trace recorder */
 #define mtCOVERAGE_TEST_MARKER()  /* _asm will be reported by coverity */
 #define configASSERT( x ) /* assert will be reported by coverity */
+
+#define configRUN_TIME_COUNTER_TYPE    uint32_t
 
 /*-----------------------------------------------------------
 * Application specific definitions.
@@ -42,7 +43,7 @@
 * http://www.freertos.org/a00110.html
 *----------------------------------------------------------*/
 
-#define configNUM_CORES                            2
+#define configNUM_CORES                            3U
 #define configUSE_CORE_AFFINITY                    1
 #define configUSE_MUTEXES                          1
 #define configUSE_MINIMAL_IDLE_HOOK                1
@@ -63,23 +64,15 @@
 #define INCLUDE_xTaskGetIdleTaskHandle             1
 #define portUSING_MPU_WRAPPERS                     1
 #define portCRITICAL_NESTING_IN_TCB                1
-/* #define portGET_CORE_ID */
-/* #define portYIELD_CORE */
-/* #define portSET_INTERRUPT_MASK */
-/* #define portCLEAR_INTERRUPT_MASK */
-/* #define portRELEASE_TASK_LOCK */
-/* #define portGET_TASK_LOCK */
-/* #define portRELEASE_ISR_LOCK */
-/* #define portGET_ISR_LOCK */
-/* #define portCHECK_IF_IN_ISR */
+#define portPRIVILEGE_BIT                          1U
 #define configUSE_TIME_SLICING                     1
-#define configRUN_MULTIPLE_PRIORITIES              0
+#define configRUN_MULTIPLE_PRIORITIES              1
 
 #define configUSE_TICKLESS_IDLE                    1
 #define configCPU_CLOCK_HZ                         60000000
 #define configSYSTICK_CLOCK_HZ                     1000000
 #define configTICK_RATE_HZ                         ( 1000U )
-#define configMAX_PRIORITIES                       ( 7 )
+#define configMAX_PRIORITIES                       ( 7U )
 #define configMINIMAL_STACK_SIZE                   ( ( configSTACK_DEPTH_TYPE ) 70U )
 #define configMAX_TASK_NAME_LEN                    ( 12 )
 #define configUSE_16_BIT_TICKS                     0
@@ -99,6 +92,7 @@
 #define configMESSAGE_BUFFER_LENGTH_TYPE           size_t
 #define configHEAP_CLEAR_MEMORY_ON_FREE            1
 #define configINITIAL_TICK_COUNT                   ( ( TickType_t ) 0 )
+#define configEXPECTED_IDLE_TIME_BEFORE_SLEEP      2U
 
 /* Memory allocation related definitions. */
 #define configTOTAL_HEAP_SIZE                      ( ( size_t ) ( 52 * 1024 ) )
@@ -122,14 +116,14 @@
 
 /* Software timer related definitions. */
 #define configUSE_TIMERS                           1
-#define configTIMER_TASK_PRIORITY                  ( configMAX_PRIORITIES - 1 )
+#define configTIMER_TASK_PRIORITY                  ( configMAX_PRIORITIES - 1U )
 #define configTIMER_QUEUE_LENGTH                   20
 #define configTIMER_TASK_STACK_DEPTH               ( configMINIMAL_STACK_SIZE * 2 )
 
 /* Interrupt nesting behaviour configuration. */
-#define configKERNEL_INTERRUPT_PRIORITY            ( configMAX_PRIORITIES - 1 )
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY       ( configMAX_PRIORITIES - 1 )
-#define configMAX_API_CALL_INTERRUPT_PRIORITY      ( configMAX_PRIORITIES - 1 )
+#define configKERNEL_INTERRUPT_PRIORITY            ( configMAX_PRIORITIES - 1U )
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY       ( configMAX_PRIORITIES - 1U )
+#define configMAX_API_CALL_INTERRUPT_PRIORITY      ( configMAX_PRIORITIES - 1U )
 
 /* FreeRTOS MPU specific definitions. */
 #define configINCLUDE_APPLICATION_DEFINED_PRIVILEGED_FUNCTIONS 0
@@ -159,13 +153,6 @@
 #define INCLUDE_xSemaphoreGetMutexHolder        1
 
 /* Run time stats gathering configuration options. */
-uint32_t ulGetRunTimeCounterValue( void );   /* Prototype of function that returns run time counter. */
-void vConfigureTimerForRunTimeStats( void ); /* Prototype of function that initialises the run time counter. */
-#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()    vConfigureTimerForRunTimeStats()
-#define portGET_RUN_TIME_COUNTER_VALUE()            ulGetRunTimeCounterValue()
-
-/* Config assert should be defined while developing. For the static analysis
- * though this should be left undefined. */
-#define configASSERT( x )
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()
 
 #endif /* FREERTOS_CONFIG_H */

@@ -77,10 +77,10 @@ typedef uint32_t         UBaseType_t;
 #define portYIELD_FROM_ISR( x )       ( void ) x
 #define portEND_SWITCHING_ISR( x )    portYIELD_FROM_ISR( ( x ) )
 
-#define portCLEAN_UP_TCB( pxTCB )                                  
-#define portPRE_TASK_DELETE_HOOK( pvTaskToDelete, pxPendYield )    
-#define portDISABLE_INTERRUPTS()                                   
-#define portENABLE_INTERRUPTS()                                    
+#define portCLEAN_UP_TCB( pxTCB )
+#define portPRE_TASK_DELETE_HOOK( pvTaskToDelete, pxPendYield )
+#define portDISABLE_INTERRUPTS()
+#define portENABLE_INTERRUPTS()
 
 /* Critical section handling. */
 extern void vTaskEnterCritical( void );

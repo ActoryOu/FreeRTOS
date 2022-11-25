@@ -8,29 +8,37 @@ export LD ?= /usr/local/bin/ld
 COVERITY_ROOT_DIR      :=  $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 KERNEL_ROOT_DIR        :=  $(COVERITY_ROOT_DIR)/../../Source
 OUTPUT_DIR             :=  $(COVERITY_ROOT_DIR)/build
-INCLUDE_DIR            :=  -I$(COVERITY_ROOT_DIR)/SingleCoreConfig -I$(KERNEL_ROOT_DIR)/include
+INCLUDE_DIR            :=  -I$(KERNEL_ROOT_DIR)/include
 
 PROJ_SRCS := $(wildcard *.c) $(wildcard $(KERNEL_ROOT_DIR)/*.c)
 PROJ_OBJS := $(notdir $(patsubst %.c,%.o,$(PROJ_SRCS) ))
 OUT_OBJS  := $(addprefix $(OUTPUT_DIR)/, $(PROJ_OBJS))
-OUT_BIN   := $(addprefix $(OUTPUT_DIR)/, coverity.bin)
 
-all: coverity
+# Setting configuration combinations
+INCLDUE_SINGLE_CORE    :=  -I$(COVERITY_ROOT_DIR)/SingleCoreConfig
+INCLDUE_MULTI_CORE1    :=  -I$(COVERITY_ROOT_DIR)/MultiCore1Config
+INCLDUE_MULTI_CORE2    :=  -I$(COVERITY_ROOT_DIR)/MultiCore2Config
+OUT_BIN_SINGLE_CORE    := $(addprefix $(OUTPUT_DIR)/, coveritySingleCore.bin)
+OUT_BIN_MULTI_CORE1    := $(addprefix $(OUTPUT_DIR)/, coverityMultiCore1.bin)
+OUT_BIN_MULTI_CORE2    := $(addprefix $(OUTPUT_DIR)/, coverityMultiCore2.bin)
 
-coverity: $(OUT_BIN)
+singlecore: $(OUT_BIN_SINGLE_CORE)
 
-$(OUT_BIN): directories
-    $(CC) -o $@ $(INCLUDE_DIR) $(PROJ_SRCS)
+multicore1: $(OUT_BIN_MULTI_CORE1)
 
-    # cov-build --emit-complementary-info --dir cov-out make
-    # cd cov-out/
-    # cov-analyze --dir . --coding-standard-config $(COVERITY_ROOT_DIR)/coverity_misra.config
-    # cov-format-errors --dir . --html-output coverity_output
+multicore2: $(OUT_BIN_MULTI_CORE2)
 
+$(OUT_BIN_SINGLE_CORE): directories
+    $(CC) -o $@ $(INCLDUE_SINGLE_CORE) $(INCLUDE_DIR) $(PROJ_SRCS)
+
+$(OUT_BIN_MULTI_CORE1): directories
+    $(CC) -o $@ $(INCLDUE_MULTI_CORE1) $(INCLUDE_DIR) $(PROJ_SRCS)
+
+$(OUT_BIN_MULTI_CORE2): directories
+    $(CC) -o $@ $(INCLDUE_MULTI_CORE2) $(INCLUDE_DIR) $(PROJ_SRCS)
 
 directories:
     -mkdir -p $(OUTPUT_DIR)
 
 clean :
     rm -rf $(OUTPUT_DIR)
-    rm -rf $(COVERITY_ROOT_DIR)/cov-out

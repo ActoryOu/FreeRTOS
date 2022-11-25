@@ -43,7 +43,7 @@
 * http://www.freertos.org/a00110.html
 *----------------------------------------------------------*/
 
-#define configNUM_CORES                            1U
+#define configNUM_CORES                            3U
 #define configUSE_CORE_AFFINITY                    1
 #define configUSE_MUTEXES                          1
 #define configUSE_MINIMAL_IDLE_HOOK                1
@@ -52,7 +52,7 @@
 #define configUSE_TRACE_FACILITY                   1
 #define configGENERATE_RUN_TIME_STATS              1
 #define configSUPPORT_DYNAMIC_ALLOCATION           1
-#define configSUPPORT_STATIC_ALLOCATION            1
+#define configSUPPORT_STATIC_ALLOCATION            0
 #define configUSE_TASK_PREEMPTION_DISABLE          0
 #define INCLUDE_vTaskDelete                        1
 #define INCLUDE_xTaskDelayUntil                    1
@@ -118,7 +118,7 @@
 #define configUSE_TIMERS                           1
 #define configTIMER_TASK_PRIORITY                  ( configMAX_PRIORITIES - 1U )
 #define configTIMER_QUEUE_LENGTH                   20
-#define configTIMER_TASK_STACK_DEPTH               ( configMINIMAL_STACK_SIZE * 2 )
+#define configTIMER_TASK_STACK_DEPTH               ( configMINIMAL_STACK_SIZE * 2U )
 
 /* Interrupt nesting behaviour configuration. */
 #define configKERNEL_INTERRUPT_PRIORITY            ( configMAX_PRIORITIES - 1U )

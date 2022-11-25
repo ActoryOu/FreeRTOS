@@ -628,6 +628,7 @@ TlsTransportStatus_t TLS_FreeRTOS_Connect( NetworkContext_t * pNetworkContext,
     TlsTransportParams_t * pTlsTransportParams = NULL;
     TlsTransportStatus_t returnStatus = TLS_TRANSPORT_SUCCESS;
     BaseType_t socketStatus = 0;
+    BaseType_t isSocketConnected = pdFALSE, isTlsSetup = pdFALSE;
 
     if( ( pNetworkContext == NULL ) ||
         ( pNetworkContext->pParams == NULL ) ||
@@ -655,6 +656,10 @@ TlsTransportStatus_t TLS_FreeRTOS_Connect( NetworkContext_t * pNetworkContext,
     if( returnStatus == TLS_TRANSPORT_SUCCESS )
     {
         pTlsTransportParams = pNetworkContext->pParams;
+
+        /* Initialize tcpSocket. */
+        pTlsTransportParams->tcpSocket = SOCKETS_INVALID_SOCKET;
+
         socketStatus = Sockets_Connect( &( pTlsTransportParams->tcpSocket ),
                                         pHostName,
                                         port,
@@ -673,6 +678,8 @@ TlsTransportStatus_t TLS_FreeRTOS_Connect( NetworkContext_t * pNetworkContext,
     /* Initialize mbedtls. */
     if( returnStatus == TLS_TRANSPORT_SUCCESS )
     {
+        isSocketConnected = pdTRUE;
+
         returnStatus = initMbedtls( &( pTlsTransportParams->sslContext.entropyContext ),
                                     &( pTlsTransportParams->sslContext.ctrDrgbContext ) );
     }
@@ -686,20 +693,25 @@ TlsTransportStatus_t TLS_FreeRTOS_Connect( NetworkContext_t * pNetworkContext,
     /* Perform TLS handshake. */
     if( returnStatus == TLS_TRANSPORT_SUCCESS )
     {
+        isTlsSetup = pdTRUE;
+        
         returnStatus = tlsHandshake( pNetworkContext, pNetworkCredentials );
     }
 
     /* Clean up on failure. */
     if( returnStatus != TLS_TRANSPORT_SUCCESS )
     {
-        if( ( pNetworkContext != NULL ) && ( pNetworkContext->pParams != NULL ) )
+        /* Free SSL context if it's setup. */
+        if( isTlsSetup == pdTRUE )
         {
             sslContextFree( &( pTlsTransportParams->sslContext ) );
+        }
 
-            if( pTlsTransportParams->tcpSocket != SOCKETS_INVALID_SOCKET )
-            {
-                ( void ) Sockets_Disconnect( pTlsTransportParams->tcpSocket );
-            }
+        /* Call Sockets_Disconnect if socket was connected. */
+        if( isSocketConnected == pdTRUE )
+        {
+            ( void ) Sockets_Disconnect( pTlsTransportParams->tcpSocket );
+            pTlsTransportParams->tcpSocket = SOCKETS_INVALID_SOCKET;
         }
     }
     else

@@ -14,6 +14,8 @@ PROJ_SRCS := $(wildcard *.c) $(wildcard $(KERNEL_ROOT_DIR)/*.c)
 PROJ_OBJS := $(notdir $(patsubst %.c,%.o,$(PROJ_SRCS) ))
 OUT_OBJS  := $(addprefix $(OUTPUT_DIR)/, $(PROJ_OBJS))
 
+CFLAGS    := "-std=gnu90"
+
 # Setting configuration combinations
 INCLDUE_SINGLE_CORE    :=  -I$(COVERITY_ROOT_DIR)/SingleCoreConfig
 INCLDUE_MULTI_CORE1    :=  -I$(COVERITY_ROOT_DIR)/MultiCore1Config
@@ -29,13 +31,13 @@ multicore1: $(OUT_BIN_MULTI_CORE1)
 multicore2: $(OUT_BIN_MULTI_CORE2)
 
 $(OUT_BIN_SINGLE_CORE): directories
-    $(CC) -o $@ $(INCLDUE_SINGLE_CORE) $(INCLUDE_DIR) $(PROJ_SRCS)
+    $(CC) $(CFLAGS) -o $@ $(INCLDUE_SINGLE_CORE) $(INCLUDE_DIR) $(PROJ_SRCS)
 
 $(OUT_BIN_MULTI_CORE1): directories
-    $(CC) -o $@ $(INCLDUE_MULTI_CORE1) $(INCLUDE_DIR) $(PROJ_SRCS)
+    $(CC) $(CFLAGS) -o $@ $(INCLDUE_SINGLE_CORE) $(INCLUDE_DIR) $(PROJ_SRCS)
 
 $(OUT_BIN_MULTI_CORE2): directories
-    $(CC) -o $@ $(INCLDUE_MULTI_CORE2) $(INCLUDE_DIR) $(PROJ_SRCS)
+    $(CC) $(CFLAGS) -o $@ $(INCLDUE_SINGLE_CORE) $(INCLUDE_DIR) $(PROJ_SRCS)
 
 directories:
     -mkdir -p $(OUTPUT_DIR)

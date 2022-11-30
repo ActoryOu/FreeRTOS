@@ -10,7 +10,7 @@ KERNEL_ROOT_DIR        :=  $(COVERITY_ROOT_DIR)/../../Source
 OUTPUT_DIR             :=  $(COVERITY_ROOT_DIR)/build
 INCLUDE_DIR            :=  -I$(KERNEL_ROOT_DIR)/include
 
-PROJ_SRCS := $(wildcard *.c) $(wildcard $(KERNEL_ROOT_DIR)/*.c)
+PROJ_SRCS := $(wildcard $(KERNEL_ROOT_DIR)/*.c) $(wildcard $(COVERITY_ROOT_DIR)/*.c)
 PROJ_OBJS := $(notdir $(patsubst %.c,%.o,$(PROJ_SRCS) ))
 OUT_OBJS  := $(addprefix $(OUTPUT_DIR)/, $(PROJ_OBJS))
 
@@ -34,10 +34,10 @@ $(OUT_BIN_SINGLE_CORE): directories
     $(CC) $(CFLAGS) -o $@ $(INCLDUE_SINGLE_CORE) $(INCLUDE_DIR) $(PROJ_SRCS)
 
 $(OUT_BIN_MULTI_CORE1): directories
-    $(CC) $(CFLAGS) -o $@ $(INCLDUE_SINGLE_CORE) $(INCLUDE_DIR) $(PROJ_SRCS)
+    $(CC) $(CFLAGS) -o $@ $(INCLDUE_MULTI_CORE1) $(INCLUDE_DIR) $(PROJ_SRCS)
 
 $(OUT_BIN_MULTI_CORE2): directories
-    $(CC) $(CFLAGS) -o $@ $(INCLDUE_SINGLE_CORE) $(INCLUDE_DIR) $(PROJ_SRCS)
+    $(CC) $(CFLAGS) -o $@ $(INCLDUE_MULTI_CORE2) $(INCLUDE_DIR) $(PROJ_SRCS)
 
 directories:
     -mkdir -p $(OUTPUT_DIR)

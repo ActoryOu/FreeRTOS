@@ -89,8 +89,8 @@ extern void vTaskExitCritical( void );
 #define portEXIT_CRITICAL()
 
 /* Task function macros as described on the FreeRTOS.org WEB site. */
-#define portTASK_FUNCTION_PROTO( vFunction, pvParameters )    void vFunction( const void * pvParameters )
-#define portTASK_FUNCTION( vFunction, pvParameters )          void vFunction( const void * pvParameters )
+#define portTASK_FUNCTION_PROTO( vFunction, pvParameters )    void vFunction( void * pvParameters )
+#define portTASK_FUNCTION( vFunction, pvParameters )          void vFunction( void * pvParameters )
 
 #define portINTERRUPT_YIELD    ( 0UL )
 

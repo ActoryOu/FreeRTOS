@@ -43,7 +43,7 @@
 * http://www.freertos.org/a00110.html
 *----------------------------------------------------------*/
 
-#define configNUM_CORES                            1U
+#define configNUMBER_OF_CORES                      1U
 #define configUSE_CORE_AFFINITY                    1
 #define configUSE_MUTEXES                          1
 #define configUSE_MINIMAL_IDLE_HOOK                1
@@ -109,10 +109,6 @@
 
 /* Run time and task stats gathering related definitions. */
 #define configUSE_STATS_FORMATTING_FUNCTIONS       1
-
-/* Co-routine related definitions. */
-#define configUSE_CO_ROUTINES                      1
-#define configMAX_CO_ROUTINE_PRIORITIES            ( 2U )
 
 /* Software timer related definitions. */
 #define configUSE_TIMERS                           1

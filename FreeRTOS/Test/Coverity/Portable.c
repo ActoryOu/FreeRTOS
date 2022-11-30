@@ -35,6 +35,12 @@
 
 volatile BaseType_t xInsideInterrupt = pdFALSE;
 uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
+BaseType_t isInISR = ( BaseType_t ) 0;
+
+extern void vTaskEnterCritical( void );
+extern void vTaskExitCritical( void );
+extern void vTaskYieldWithinAPI( void );
+extern TaskHandle_t xTaskGetCurrentTaskHandle( void );
 
 /* Provide a main function for the build to succeed. */
 int main()
@@ -206,18 +212,3 @@ void vApplicationMinimalIdleHook( void )
     return;
 }
 /*-----------------------------------------------------------*/
-
-BaseType_t portCheckIfInISR()
-{
-    BaseType_t xIdx = 0;
-    BaseType_t xReturn = ( BaseType_t ) pdTRUE;
-
-    xIdx++;
-
-    if( xIdx % 2 == 0 )
-    {
-        xReturn = ( BaseType_t ) pdFALSE;
-    }
-    
-    return xReturn;
-}

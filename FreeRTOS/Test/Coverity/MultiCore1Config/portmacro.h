@@ -79,7 +79,7 @@ typedef uint32_t         UBaseType_t;
 #define portRELEASE_ISR_LOCK()
 #define portGET_ISR_LOCK()
 extern BaseType_t isInISR;
-#define portCHECK_IF_IN_ISR(...)                  ( isInISR++ > 2 )
+#define portCHECK_IF_IN_ISR(...)                  ( isInISR++ > ( BaseType_t ) 2 )
 #define portENTER_CRITICAL_FROM_ISR()             ( ( UBaseType_t ) 0 )
 #define portEXIT_CRITICAL_FROM_ISR(...)
 
@@ -106,8 +106,7 @@ extern void vTaskExitCritical( void );
 
 #define portINTERRUPT_YIELD    ( 0UL )
 
-configRUN_TIME_COUNTER_TYPE portGetRunTimeCounterValue( void );
-#define portGET_RUN_TIME_COUNTER_VALUE(...)         portGetRunTimeCounterValue()
+#define portGET_RUN_TIME_COUNTER_VALUE(...)         ( 100U )
 
 /**
  * @brief MPU settings as stored in the TCB.

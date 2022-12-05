@@ -45,6 +45,8 @@ extern TaskHandle_t xTaskGetCurrentTaskHandle( void );
 /* Provide a main function for the build to succeed. */
 int main()
 {
+    vTaskStartScheduler();
+
     return 0;
 }
 /*-----------------------------------------------------------*/
@@ -198,12 +200,6 @@ size_t xPortGetFreeHeapSize( void )
 size_t xPortGetMinimumEverFreeHeapSize( void )
 {
     return 0;
-}
-/*-----------------------------------------------------------*/
-
-configRUN_TIME_COUNTER_TYPE portGetRunTimeCounterValue( void )
-{
-    return 100U;
 }
 /*-----------------------------------------------------------*/
 

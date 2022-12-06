@@ -10,7 +10,7 @@ KERNEL_ROOT_DIR        :=  $(COVERITY_ROOT_DIR)/../../Source
 OUTPUT_DIR             :=  $(COVERITY_ROOT_DIR)/build
 INCLUDE_DIR            :=  -I$(KERNEL_ROOT_DIR)/include
 
-PROJ_SRCS := $(wildcard $(KERNEL_ROOT_DIR)/*.c) $(wildcard $(COVERITY_ROOT_DIR)/*.c)
+PROJ_SRCS := $(wildcard $(KERNEL_ROOT_DIR)/*.c) $(wildcard $(COVERITY_ROOT_DIR)/*.c) $(wildcard $(KERNEL_ROOT_DIR)/portable/Common/*.c)
 PROJ_OBJS := $(notdir $(patsubst %.c,%.o,$(PROJ_SRCS) ))
 OUT_OBJS  := $(addprefix $(OUTPUT_DIR)/, $(PROJ_OBJS))
 

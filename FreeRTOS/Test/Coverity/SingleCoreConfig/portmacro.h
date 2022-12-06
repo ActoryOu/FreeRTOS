@@ -96,6 +96,13 @@ extern void vTaskExitCritical( void );
 
 #define portGET_RUN_TIME_COUNTER_VALUE(...)         ( 100U )
 
+extern void vResetPrivilege( void );
+extern BaseType_t xIsPrivileged( void );
+extern void vRaisePrivilege( void );
+#define portIS_PRIVILEGED()         xIsPrivileged()
+#define portRESET_PRIVILEGE()       vResetPrivilege()
+#define portRAISE_PRIVILEGE()       vRaisePrivilege()
+
 /**
  * @brief MPU settings as stored in the TCB.
  */

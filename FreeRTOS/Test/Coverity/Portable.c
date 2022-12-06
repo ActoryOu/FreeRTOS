@@ -158,12 +158,6 @@ void vPortStoreTaskMPUSettings( xMPU_SETTINGS * xMPUSettings,
 }
 /*-----------------------------------------------------------*/
 
-TickType_t MPU_xTaskGetTickCount( void ) 
-{
-    return 0;
-}
-/*-----------------------------------------------------------*/
-
 void vPortDefineHeapRegions( const HeapRegion_t * const pxHeapRegions )
 {
     ( void ) pxHeapRegions;
@@ -204,6 +198,33 @@ size_t xPortGetMinimumEverFreeHeapSize( void )
 /*-----------------------------------------------------------*/
 
 void vApplicationMinimalIdleHook( void )
+{
+    return;
+}
+/*-----------------------------------------------------------*/
+
+void vResetPrivilege( void )
+{
+    return;
+}
+/*-----------------------------------------------------------*/
+
+BaseType_t xIsPrivileged( void )
+{
+    static BaseType_t xIdxIsPrivileged = 0;
+    BaseType_t xReturn = pdTRUE;
+
+    xIdxIsPrivileged++;
+    if( xIdxIsPrivileged % 2 == 0 )
+    {
+        xReturn = pdFALSE;
+    }
+
+    return xReturn;
+}
+/*-----------------------------------------------------------*/
+
+void vRaisePrivilege( void )
 {
     return;
 }

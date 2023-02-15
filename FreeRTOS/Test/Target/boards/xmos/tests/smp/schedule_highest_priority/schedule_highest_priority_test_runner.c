@@ -25,7 +25,7 @@
  */
 
 /**
- * @file multiple_task_running_test_runner.c
+ * @file select_highest_priority_test_runner.c
  * @brief The implementation of main function to start test runner task.
  *
  * Procedure:
@@ -42,7 +42,7 @@
 
 static void prvTestRunnerTask( void * pvParameters );
 
-extern void vRunMultipleTasksRunningTest( void );
+extern void vRunScheduleHighestPriorityTest( void );
 /*-----------------------------------------------------------*/
 
 static void prvTestRunnerTask( void * pvParameters )
@@ -50,7 +50,7 @@ static void prvTestRunnerTask( void * pvParameters )
     ( void ) pvParameters;
 
     /* Run test case. */
-    vRunMultipleTasksRunningTest();
+    vRunScheduleHighestPriorityTest();
 
     vTaskDelete( NULL );
 }

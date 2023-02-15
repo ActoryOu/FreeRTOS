@@ -34,7 +34,8 @@ int main(void)
 		on tile[1]:
 		{
 			par {
-				c_main();
+				/* We only use tile 0 to run SMP on target test. */
+				xctask2();
 			}
 		}
 #endif

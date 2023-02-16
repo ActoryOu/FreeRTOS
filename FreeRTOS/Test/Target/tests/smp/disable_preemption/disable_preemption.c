@@ -98,21 +98,27 @@ static BaseType_t xIsTaskT0PreemptDisabled = { pdFALSE };
 static BaseType_t xIsTaskT0Finished = { pdFALSE };
 /*-----------------------------------------------------------*/
 
-void test_TASK_SWITCHED_IN(void) {
-    if( xTaskHanldes[0] && xIsTaskT0PreemptDisabled == pdTRUE )
-    {
-        TEST_ASSERT_EQUAL_INT( eTaskGetState( xTaskHanldes[0] ), eRunning );
-    }
-}
-/*-----------------------------------------------------------*/
-
 static void prvEverRunningTask( void * pvParameters )
 {
+    eTaskState xTaskState;
+
     /* Silence warnings about unused parameters. */
     ( void ) pvParameters;
 
     for( ; ; )
     {
+        /* Check xIsTaskT0PreemptDisabled before getting task's state to make sure task disabled preemption.
+           Check it again after getting state to make sure the preemption is still disabled. */
+        if( xTaskHanldes[0] && xIsTaskT0PreemptDisabled == pdTRUE )
+        {
+            xTaskState = eTaskGetState( xTaskHanldes[0] );
+
+            if( xIsTaskT0PreemptDisabled == pdTRUE )
+            {
+                TEST_ASSERT_EQUAL_INT( xTaskState, eRunning );
+            }
+        }
+
         /* Always running, put asm here to avoid optimization by compiler. */
         __asm volatile ( "nop" );
     }
@@ -154,7 +160,6 @@ static void prvDisablePreemptionTask( void * pvParameters )
 
 void Test_DisablePreemption(void) {
     TickType_t xStartTick = xTaskGetTickCount();
-    int i = 0;
 
     /* Wait other tasks. */
     while( xIsTaskT0Finished == pdFALSE )

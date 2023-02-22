@@ -68,13 +68,13 @@ void Test_ScheduleHighestPirority( void );
 /**
  * @brief Function that implements a never blocking FreeRTOS task.
  */
-static void vPrvEverRunningTask( void * pvParameters );
+static void prvEverRunningTask( void * pvParameters );
 
 /**
  * @brief Function that returns which index does the xCurrentTaskHandle match.
  *        0 for T0, 1 for T1, -1 for not match.
  */
-static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
+static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
 
 /**
  * @brief Check if all tasks have run or not.
@@ -110,7 +110,7 @@ static BaseType_t xAreAllTasksRun( void )
 }
 /*-----------------------------------------------------------*/
 
-static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
+static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
 {
     int i = 0;
     int lMatchIdx = -1;
@@ -128,14 +128,15 @@ static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
 }
 /*-----------------------------------------------------------*/
 
-static void vPrvEverRunningTask( void * pvParameters )
+static void prvEverRunningTask( void * pvParameters )
 {
-    int lCurrentTaskIdx = lFindTaskIdx( xTaskGetCurrentTaskHandle() );
+    int currentTaskIdx = prvFindTaskIdx( xTaskGetCurrentTaskHandle() );
 
     /* Silence warnings about unused parameters. */
     ( void ) pvParameters;
 
-    xTaskRun[ lCurrentTaskIdx ] = pdTRUE;
+    /* Set the flag for testRunner to check whether all tasks have run. */
+    xTaskRun[ currentTaskIdx ] = pdTRUE;
 
     for( ; ; )
     {
@@ -155,7 +156,7 @@ void Test_ScheduleEqualPriority( void )
     {
         vTaskDelay( pdMS_TO_TICKS( 10 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -174,7 +175,7 @@ void setUp( void )
     /* Create configNUMBER_OF_CORES + 1 low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES + 1; i++ )
     {
-        xTaskCreationResult = xTaskCreate( vPrvEverRunningTask,
+        xTaskCreationResult = xTaskCreate( prvEverRunningTask,
                                            "EverRun",
                                            configMINIMAL_STACK_SIZE,
                                            NULL,
@@ -194,7 +195,7 @@ void tearDown( void )
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES + 1; i++ )
     {
-        if( xTaskHanldes[ i ] )
+        if( xTaskHanldes[ i ] != NULL )
         {
             vTaskDelete( xTaskHanldes[ i ] );
         }

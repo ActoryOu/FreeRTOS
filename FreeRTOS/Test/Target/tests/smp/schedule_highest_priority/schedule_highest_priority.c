@@ -31,7 +31,7 @@
  * Procedure:
  *   - Create ( num of cores ) tasks ( T0~Tn-1 ). Priority T0 > T1 > ... > Tn-2 > Tn-1.
  * Expected:
- *   - Make sure that T0 is run first, then T1, ..., and finally Tn-1.
+ *   - When a task runs, all tasks have higher priority are running.
  */
 
 /* Kernel includes. */
@@ -51,6 +51,10 @@
 #if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
 #endif /* if configNUMBER_OF_CORES != 2 */
+
+#if ( configMAX_PRIORITIES <= configNUMBER_OF_CORES )
+    #error This test creates tasks with different priority, requires configMAX_PRIORITIES to be larger than configNUMBER_OF_CORES.
+#endif /* if configNUMBER_OF_CORES != 2 */
 /*-----------------------------------------------------------*/
 
 /**
@@ -61,13 +65,13 @@ void Test_ScheduleHighestPirority( void );
 /**
  * @brief Function that implements a never blocking FreeRTOS task.
  */
-static void vPrvEverRunningTask( void * pvParameters );
+static void prvEverRunningTask( void * pvParameters );
 
 /**
  * @brief Function that returns which index does the xCurrentTaskHandle match.
  *        0 for T0, 1 for T1, -1 for not match.
  */
-static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
+static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
 /*-----------------------------------------------------------*/
 
 /**
@@ -81,7 +85,7 @@ static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
 static BaseType_t xIsTestFinished = pdFALSE;
 /*-----------------------------------------------------------*/
 
-static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
+static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
 {
     int i = 0;
     int lMatchIdx = -1;
@@ -99,31 +103,34 @@ static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
 }
 /*-----------------------------------------------------------*/
 
-static void vPrvEverRunningTask( void * pvParameters )
+static void prvEverRunningTask( void * pvParameters )
 {
     int i = 0;
-    int lCurrentTaskIdx = lFindTaskIdx( xTaskGetCurrentTaskHandle() );
+    int currentTaskIdx = prvFindTaskIdx( xTaskGetCurrentTaskHandle() );
     eTaskState taskState;
 
     /* Silence warnings about unused parameters. */
     ( void ) pvParameters;
 
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    for( i = 0; i < currentTaskIdx; i++ )
     {
-        if( !xTaskHanldes[ i ] )
+        /* The tasks with higher priority must be created first. On the other hand,
+         * If the task is not created yet, the following tasks are not created. */
+        if( xTaskHanldes[ i ] == NULL )
         {
+            TEST_ASSERT_TRUE( xTaskHanldes[ i ] != NULL );
             break;
         }
 
         taskState = eTaskGetState( xTaskHanldes[ i ] );
 
-        if( i <= lCurrentTaskIdx )
-        {
-            TEST_ASSERT_EQUAL_INT( eRunning, taskState );
-        }
+        /* Because priority of T0 > T1 > ... > Tn-1, the tasks, whose index is lower than currentTaskIdx,
+         * have higher priority. So they must be in running state. */
+        TEST_ASSERT_EQUAL_INT( eRunning, taskState );
     }
 
-    if( lCurrentTaskIdx == configNUMBER_OF_CORES - 1 )
+    /* If the task is the last task, then we finish the check because all tasks are checked. */
+    if( currentTaskIdx == ( configNUMBER_OF_CORES - 1 ) )
     {
         xIsTestFinished = pdTRUE;
     }
@@ -143,9 +150,9 @@ void Test_ScheduleHighestPirority( void )
     /* Wait other tasks. */
     while( xIsTestFinished == pdFALSE )
     {
-        vTaskDelay( pdMS_TO_TICKS( 10 ) );
+        vTaskDelay( pdMS_TO_TICKS( 100 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -164,7 +171,7 @@ void setUp( void )
     /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
-        xTaskCreationResult = xTaskCreate( vPrvEverRunningTask,
+        xTaskCreationResult = xTaskCreate( prvEverRunningTask,
                                            "EverRun",
                                            configMINIMAL_STACK_SIZE * 2,
                                            NULL,

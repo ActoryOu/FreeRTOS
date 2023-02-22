@@ -1,5 +1,5 @@
-// Copyright 2019-2021 XMOS LIMITED.
-// This Software is subject to the terms of the XMOS Public Licence: Version 1.
+/* Copyright 2019-2021 XMOS LIMITED. */
+/* This Software is subject to the terms of the XMOS Public Licence: Version 1. */
 
 #include <xs1.h>
 
@@ -15,7 +15,7 @@
  * Not static so that it can be accessed directly by
  * RTOS functions written in assembly.
  */
-int rtos_core_map[RTOS_MAX_CORE_COUNT] = {0};
+int rtos_core_map[ RTOS_MAX_CORE_COUNT ] = { 0 };
 
 /*
  * This is indexed by the RTOS core ID
@@ -24,7 +24,7 @@ int rtos_core_map[RTOS_MAX_CORE_COUNT] = {0};
  * It returns the logical core ID  which is
  * returned by get_logical_core_id().
  */
-static int rtos_core_map_reverse[RTOS_MAX_CORE_COUNT];
+static int rtos_core_map_reverse[ RTOS_MAX_CORE_COUNT ];
 
 /*
  * The number of RTOS cores that have been initialized.
@@ -40,36 +40,36 @@ static /*volatile*/ int rtos_core_init_count;
  * Note this is not the necessarily the same as the
  * ID returned by get_logical_core_id().
  */
-int rtos_core_register(void)
+int rtos_core_register( void )
 {
     int core_id;
 
-    core_id = (int) get_logical_core_id();
+    core_id = ( int ) get_logical_core_id();
 
-    rtos_lock_acquire(0);
+    rtos_lock_acquire( 0 );
     {
-        rtos_core_map[core_id] = rtos_core_init_count;
-        rtos_core_map_reverse[rtos_core_init_count] = core_id;
+        rtos_core_map[ core_id ] = rtos_core_init_count;
+        rtos_core_map_reverse[ rtos_core_init_count ] = core_id;
         core_id = rtos_core_init_count++;
     }
-    rtos_lock_release(0);
+    rtos_lock_release( 0 );
 
     return core_id;
 }
 
 /* Note, always returns 0 before the scheduler is started. */
-int rtos_core_id_get(void)
+int rtos_core_id_get( void )
 {
-    return rtos_core_map[get_logical_core_id()];
+    return rtos_core_map[ get_logical_core_id() ];
 }
 
-int rtos_logical_core_id_get(int core_id)
+int rtos_logical_core_id_get( int core_id )
 {
-    xassert(core_id < rtos_core_init_count);
+    xassert( core_id < rtos_core_init_count );
     return rtos_core_map_reverse[ core_id ];
 }
 
-int rtos_core_count(void)
+int rtos_core_count( void )
 {
     return rtos_core_init_count;
 }

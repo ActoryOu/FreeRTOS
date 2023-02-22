@@ -55,7 +55,6 @@ static unsigned long ulCnt = 0;
 
 static void prvInitializeHardware( void )
 {
-    
 }
 /*-----------------------------------------------------------*/
 
@@ -95,12 +94,12 @@ void vApplicationMallocFailedHook( void )
 }
 /*-----------------------------------------------------------*/
 
-void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
-                                    StackType_t **ppxIdleTaskStackBuffer,
-                                    uint32_t *pulIdleTaskStackSize )
+void vApplicationGetIdleTaskMemory( StaticTask_t ** ppxIdleTaskTCBBuffer,
+                                    StackType_t ** ppxIdleTaskStackBuffer,
+                                    uint32_t * pulIdleTaskStackSize )
 {
-	static StaticTask_t xIdleTaskTCB;
-	static StackType_t uxIdleTaskStack[ configMINIMAL_STACK_SIZE ];
+    static StaticTask_t xIdleTaskTCB;
+    static StackType_t uxIdleTaskStack[ configMINIMAL_STACK_SIZE ];
 
     *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
 
@@ -110,12 +109,12 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
 }
 /*-----------------------------------------------------------*/
 
-void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
-                                    		StackType_t **ppxTimerTaskStackBuffer,
-                                    		uint32_t *pulTimerTaskStackSize )
+void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer,
+                                     StackType_t ** ppxTimerTaskStackBuffer,
+                                     uint32_t * pulTimerTaskStackSize )
 {
-	static StaticTask_t xTimerTaskTCB;
-	static StackType_t uxTimerTaskStack[ configMINIMAL_STACK_SIZE ];
+    static StaticTask_t xTimerTaskTCB;
+    static StackType_t uxTimerTaskStack[ configMINIMAL_STACK_SIZE ];
 
     *ppxTimerTaskTCBBuffer = &xTimerTaskTCB;
 
@@ -130,25 +129,25 @@ void vApplicationIdleHook( void )
     volatile BaseType_t xValue;
     uint32_t ulState;
 
-	xValue = intCONST1;
-	xValue += intCONST2;
-	xValue *= intCONST3;
-	xValue /= intCONST4;
+    xValue = intCONST1;
+    xValue += intCONST2;
+    xValue *= intCONST3;
+    xValue /= intCONST4;
 
-	if( xValue != intEXPECTED_ANSWER )
-	{
-		rtos_printf("Error Occured at Idle Count: %u\n", ulCnt);
-	}
+    if( xValue != intEXPECTED_ANSWER )
+    {
+        rtos_printf( "Error Occured at Idle Count: %u\n", ulCnt );
+    }
 
-	#if( configUSE_PREEMPTION == 0 )
-	{
-		taskYIELD();
-	}
-	#endif
+    #if ( configUSE_PREEMPTION == 0 )
+    {
+        taskYIELD();
+    }
+    #endif
 
-	ulState = portDISABLE_INTERRUPTS();
-	ulCnt++;
-	portRESTORE_INTERRUPTS(ulState);
+    ulState = portDISABLE_INTERRUPTS();
+    ulCnt++;
+    portRESTORE_INTERRUPTS( ulState );
 }
 /*-----------------------------------------------------------*/
 
@@ -161,7 +160,9 @@ int c_main( void )
     vTaskStartScheduler();
 
     /* should never reach here */
-    for( ;; );
+    for( ; ; )
+    {
+    }
 
     return 0;
 }

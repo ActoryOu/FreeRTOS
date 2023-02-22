@@ -1,5 +1,5 @@
-// Copyright 2019-2021 XMOS LIMITED.
-// This Software is subject to the terms of the XMOS Public Licence: Version 1.
+/* Copyright 2019-2021 XMOS LIMITED. */
+/* This Software is subject to the terms of the XMOS Public Licence: Version 1. */
 
 #ifndef RTOS_IRQ_H_
 #define RTOS_IRQ_H_
@@ -12,7 +12,7 @@
  * ISRs registered with the RTOS IRQ system must be
  * compatible with this type.
  */
-typedef void (*rtos_irq_isr_t)( void *param );
+typedef void (* rtos_irq_isr_t)( void * param );
 
 /**
  * This macro must precede the definition of ISRs that
@@ -22,7 +22,7 @@ typedef void (*rtos_irq_isr_t)( void *param );
  * group which allows the compiler to correctly calculate
  * the stack size for ISRs.
  */
-#define RTOS_IRQ_ISR_ATTR __attribute__((fptrgroup("rtos_irq_isr")))
+#define RTOS_IRQ_ISR_ATTR    __attribute__( ( fptrgroup( "rtos_irq_isr" ) ) )
 
 /**
  * This function sends an IRQ to an RTOS core. It may be called both by
@@ -36,7 +36,8 @@ typedef void (*rtos_irq_isr_t)( void *param );
  *                       When called by a non-RTOS core then this must be an ID returned
  *                       by rtos_irq_source_register().
  */
-void rtos_irq(int core_id, int source_id);
+void rtos_irq( int core_id,
+               int source_id );
 
 
 /**
@@ -47,7 +48,7 @@ void rtos_irq(int core_id, int source_id);
  * \param dest_chanend  The channel end used by the peripheral to receive
  *                      the interrupt.
  */
-void rtos_irq_peripheral(chanend_t dest_chanend);
+void rtos_irq_peripheral( chanend_t dest_chanend );
 
 /**
  * This function registers a non-RTOS IRQ source. The source ID
@@ -63,7 +64,9 @@ void rtos_irq_peripheral(chanend_t dest_chanend);
  * peripheral needs to send an IRQ.
  */
 
-int rtos_irq_register(rtos_irq_isr_t isr, void *data, chanend_t source_chanend);
+int rtos_irq_register( rtos_irq_isr_t isr,
+                       void * data,
+                       chanend_t source_chanend );
 
 /**
  * This function enables the calling core to receive RTOS IRQs. It
@@ -72,13 +75,13 @@ int rtos_irq_register(rtos_irq_isr_t isr, void *data, chanend_t source_chanend);
  *
  * \param The total number of cores used by the RTOS.
  */
-void rtos_irq_enable(int total_rtos_cores);
+void rtos_irq_enable( int total_rtos_cores );
 
 /**
  * This function checks to see if the IRQ system is ready.
  *
  * \returns true if all of the cores have enabled IRQs. Otherwise false.
  */
-int rtos_irq_ready(void);
+int rtos_irq_ready( void );
 
 #endif /* RTOS_IRQ_H_ */

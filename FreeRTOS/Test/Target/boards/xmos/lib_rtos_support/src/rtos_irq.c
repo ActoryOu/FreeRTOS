@@ -1,5 +1,5 @@
-// Copyright 2019-2021 XMOS LIMITED.
-// This Software is subject to the terms of the XMOS Public Licence: Version 1.
+/* Copyright 2019-2021 XMOS LIMITED. */
+/* This Software is subject to the terms of the XMOS Public Licence: Version 1. */
 
 #include <xcore/triggerable.h>
 #include "rtos_support.h"
@@ -10,9 +10,9 @@
  *
  * (Assuming RTOS_MAX_CORE_COUNT == 8)
  */
-#define RTOS_CORE_SOURCE_MASK ( ( 1 << RTOS_MAX_CORE_COUNT ) - 1)
-#define MAX_ADDITIONAL_SOURCES 8
-#define MAX_SOURCE_ID ( RTOS_MAX_CORE_COUNT + MAX_ADDITIONAL_SOURCES - 1 )
+#define RTOS_CORE_SOURCE_MASK     ( ( 1 << RTOS_MAX_CORE_COUNT ) - 1 )
+#define MAX_ADDITIONAL_SOURCES    8
+#define MAX_SOURCE_ID             ( RTOS_MAX_CORE_COUNT + MAX_ADDITIONAL_SOURCES - 1 )
 
 /*
  * The channel ends used by RTOS cores to send and receive IRQs.
@@ -42,12 +42,13 @@ static uint32_t irq_enable_bf;
  */
 static int irq_ready;
 
-typedef struct {
+typedef struct
+{
     RTOS_IRQ_ISR_ATTR rtos_irq_isr_t isr;
-    void *data;
+    void * data;
 } isr_info_t;
 
-static isr_info_t isr_info[MAX_ADDITIONAL_SOURCES];
+static isr_info_t isr_info[ MAX_ADDITIONAL_SOURCES ];
 
 DEFINE_RTOS_INTERRUPT_CALLBACK( rtos_irq_handler, data )
 {
@@ -64,28 +65,28 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( rtos_irq_handler, data )
     RTOS_MEMORY_BARRIER();
 
     /* grab a snapshot of the pending flags before clearing them.
-    After the clear, this core may be interrupted again. We will
-    handle all the interrupts at the time the snapshot is taken now,
-    and any more will be handled when this ISR is called again. */
+     * After the clear, this core may be interrupted again. We will
+     * handle all the interrupts at the time the snapshot is taken now,
+     * and any more will be handled when this ISR is called again. */
 
-    rtos_lock_acquire(0);
+    rtos_lock_acquire( 0 );
     {
         pending = irq_pending[ core_id ];
         irq_pending[ core_id ] = 0;
     }
-    rtos_lock_release(0);
+    rtos_lock_release( 0 );
 
-    if (pending & RTOS_CORE_SOURCE_MASK )
+    if( pending & RTOS_CORE_SOURCE_MASK )
     {
         /* This core is being yielded by at least one other RTOS core.
-        Clear the pending flags from all of them and enter the scheduler. */
+         * Clear the pending flags from all of them and enter the scheduler. */
 
         pending &= ~RTOS_CORE_SOURCE_MASK;
 
         RTOS_INTERCORE_INTERRUPT_ISR();
     }
 
-    while ( pending != 0 )
+    while( pending != 0 )
     {
         int source_id = 31UL - ( uint32_t ) __builtin_clz( pending );
 
@@ -94,7 +95,8 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( rtos_irq_handler, data )
         pending &= ~( 1 << source_id );
 
         source_id -= RTOS_MAX_CORE_COUNT;
-        if ( isr_info[ source_id ].isr != NULL )
+
+        if( isr_info[ source_id ].isr != NULL )
         {
             isr_info[ source_id ].isr( isr_info[ source_id ].data );
         }
@@ -105,7 +107,8 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( rtos_irq_handler, data )
  * May be called by a non-RTOS core provided
  * xSourceID >= RTOS_MAX_CORE_COUNT.
  */
-void rtos_irq( int core_id, int source_id )
+void rtos_irq( int core_id,
+               int source_id )
 {
     chanend_t source_chanend;
     uint32_t pending;
@@ -123,24 +126,25 @@ void rtos_irq( int core_id, int source_id )
      * until the core reads the token from the channel and clears the
      * pending flags.
      */
-    rtos_lock_acquire(0);
+    rtos_lock_acquire( 0 );
     {
         pending = irq_pending[ core_id ];
         irq_pending[ core_id ] |= ( 1 << source_id );
 
         if( pending == 0 )
         {
-            if( source_id >= 0 && source_id < num_cores )
+            if( ( source_id >= 0 ) && ( source_id < num_cores ) )
             {
                 source_chanend = rtos_irq_chanend[ source_id ];
             }
-            else if ( source_id >= RTOS_MAX_CORE_COUNT && source_id < RTOS_MAX_CORE_COUNT + peripheral_source_count )
+            else if( ( source_id >= RTOS_MAX_CORE_COUNT ) && ( source_id < RTOS_MAX_CORE_COUNT + peripheral_source_count ) )
             {
                 source_chanend = peripheral_irq_chanend[ source_id - RTOS_MAX_CORE_COUNT ];
             }
             else
             {
-                xassert(0);
+                xassert( 0 );
+
                 /* If assertions are disabled, setting this to 0
                  * here should cause a resource exception below. */
                 source_chanend = 0;
@@ -153,7 +157,7 @@ void rtos_irq( int core_id, int source_id )
             chanend_out_end_token( source_chanend );
         }
     }
-    rtos_lock_release(0);
+    rtos_lock_release( 0 );
 }
 
 
@@ -166,21 +170,24 @@ void rtos_irq_peripheral( chanend_t dest_chanend )
     int core_id;
 
     uint32_t mask = rtos_interrupt_mask_all();
+
     core_id = rtos_core_id_get();
     chanend_set_dest( rtos_irq_chanend[ core_id ], dest_chanend );
     chanend_out_end_token( rtos_irq_chanend[ core_id ] );
-    rtos_interrupt_mask_set(mask);
+    rtos_interrupt_mask_set( mask );
 }
 
-int rtos_irq_register(rtos_irq_isr_t isr, void *data, chanend_t source_chanend)
+int rtos_irq_register( rtos_irq_isr_t isr,
+                       void * data,
+                       chanend_t source_chanend )
 {
     int source_id;
 
     xassert( peripheral_source_count < MAX_ADDITIONAL_SOURCES );
 
-    rtos_lock_acquire(0);
+    rtos_lock_acquire( 0 );
     source_id = peripheral_source_count++;
-    rtos_lock_release(0);
+    rtos_lock_release( 0 );
 
     isr_info[ source_id ].isr = isr;
     isr_info[ source_id ].data = data;
@@ -198,18 +205,19 @@ void rtos_irq_enable( int total_rtos_cores )
     triggerable_setup_interrupt_callback( rtos_irq_chanend[ core_id ], NULL, RTOS_INTERRUPT_CALLBACK( rtos_irq_handler ) );
     triggerable_enable_trigger( rtos_irq_chanend[ core_id ] );
 
-    rtos_lock_acquire(0);
+    rtos_lock_acquire( 0 );
     {
-        irq_enable_bf |= (1 << core_id);
+        irq_enable_bf |= ( 1 << core_id );
 
-        if (irq_enable_bf == (1 << total_rtos_cores) - 1) {
+        if( irq_enable_bf == ( 1 << total_rtos_cores ) - 1 )
+        {
             irq_ready = 1;
         }
     }
-    rtos_lock_release(0);
+    rtos_lock_release( 0 );
 }
 
-int rtos_irq_ready(void)
+int rtos_irq_ready( void )
 {
     return irq_ready;
 }

@@ -283,6 +283,10 @@ FREERTOS_IGNORED_PATTERNS = [
     r'FreeRTOS/Demo/RX700_RX72N_EnvisionKit_GCC_e2studio/src/smc_gen/.*',
     r'FreeRTOS/Demo/RX700_RX72N_EnvisionKit_IAR_e2studio_EWRX/src/smc_gen/.*',
     r'FreeRTOS/Demo/RX700_RX72N_EnvisionKit_Renesas_e2studio_CS\+/src/smc_gen/.*'
+    r'FreeRTOS/Test/Target/boards/xmos/.*\.xc'
+    r'FreeRTOS/Test/Target/boards/xmos/.*\.xscope'
+    r'FreeRTOS/Test/Target/boards/xmos/.*\.xn'
+    r'FreeRTOS/Test/Target/boards/xmos/lib_rtos_support/.*'
 ]
 
 FREERTOS_IGNORED_FILES = [

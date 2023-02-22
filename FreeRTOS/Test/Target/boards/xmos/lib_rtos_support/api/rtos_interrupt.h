@@ -1,5 +1,5 @@
-// Copyright 2019-2021 XMOS LIMITED.
-// This Software is subject to the terms of the XMOS Public Licence: Version 1.
+/* Copyright 2019-2021 XMOS LIMITED. */
+/* This Software is subject to the terms of the XMOS Public Licence: Version 1. */
 
 #ifndef RTOS_INTERRUPT_H_
 #define RTOS_INTERRUPT_H_
@@ -45,8 +45,8 @@
  *  \param root_function    the name of the ordinary function
  *  \param ...              the arguments of the ordinary function
  */
-#define DEFINE_RTOS_KERNEL_ENTRY(ret, root_function, ...) \
-        _DEFINE_RTOS_KERNEL_ENTRY(ret, root_function, __VA_ARGS__)
+#define DEFINE_RTOS_KERNEL_ENTRY( ret, root_function, ... ) \
+    _DEFINE_RTOS_KERNEL_ENTRY( ret, root_function, __VA_ARGS__ )
 
 /** Declare an RTOS interrupt permitting function
  *
@@ -67,8 +67,8 @@
  *  \param root_function    the name of the ordinary function
  *  \param ...              the arguments of the ordinary function
  */
-#define DECLARE_RTOS_KERNEL_ENTRY(ret, root_function, ...) \
-        _XCORE_DECLARE_INTERRUPT_PERMITTED(ret, root_function, __VA_ARGS__)
+#define DECLARE_RTOS_KERNEL_ENTRY( ret, root_function, ... ) \
+    _XCORE_DECLARE_INTERRUPT_PERMITTED( ret, root_function, __VA_ARGS__ )
 
 /** The name of the defined RTOS kernel entry function
  *
@@ -77,7 +77,7 @@
  *
  *  \return     the name of the defined kernel entry function
  */
-#define RTOS_KERNEL_ENTRY(root_function) _XCORE_INTERRUPT_PERMITTED(root_function)
+#define RTOS_KERNEL_ENTRY( root_function )    _XCORE_INTERRUPT_PERMITTED( root_function )
 
 
 /** Define an RTOS interrupt handling function
@@ -101,8 +101,8 @@
  *  \param intrpt   this is the name of the ordinary function
  *  \param data     the name to use for the void* argument
  */
-#define DEFINE_RTOS_INTERRUPT_CALLBACK(intrpt, data) \
-        _DEFINE_RTOS_INTERRUPT_CALLBACK(intrpt, data)
+#define DEFINE_RTOS_INTERRUPT_CALLBACK( intrpt, data ) \
+    _DEFINE_RTOS_INTERRUPT_CALLBACK( intrpt, data )
 
 /** Declare an RTOS interrupt handling function
  *
@@ -116,8 +116,8 @@
  *  \param intrpt   this is the name of the ordinary function
  *  \param data     the name to use for the void* argument
  */
-#define DECLARE_RTOS_INTERRUPT_CALLBACK(intrpt, data) \
-        _DECLARE_RTOS_INTERRUPT_CALLBACK(intrpt, data)
+#define DECLARE_RTOS_INTERRUPT_CALLBACK( intrpt, data ) \
+    _DECLARE_RTOS_INTERRUPT_CALLBACK( intrpt, data )
 
 /** The name of the defined 'interrupt_callback_t' function
  *
@@ -126,7 +126,7 @@
  *
  *  \return     the name of the defined interrupt_callback_t function
  */
-#define RTOS_INTERRUPT_CALLBACK(intrpt) _XCORE_INTERRUPT_CALLBACK(intrpt)
+#define RTOS_INTERRUPT_CALLBACK( intrpt )    _XCORE_INTERRUPT_CALLBACK( intrpt )
 
 
 /**
@@ -135,41 +135,41 @@
  *
  * \returns the current interrupt mask.
  */
-inline uint32_t rtos_interrupt_mask_get(void)
+inline uint32_t rtos_interrupt_mask_get( void )
 {
     uint32_t mask;
 
-    asm volatile(
-        "getsr r11," RTOS_STRINGIFY(XS1_SR_IEBLE_MASK) "\n"
-        "mov %0, r11"
-        : "=r"(mask)
+    asm volatile (
+        "getsr r11," RTOS_STRINGIFY( XS1_SR_IEBLE_MASK ) "\n"
+                                                         "mov %0, r11"
+        : "=r" ( mask )
         : /* no inputs */
         : /* clobbers */ "r11"
-    );
+        );
 
     return mask;
 }
 
- /**
-  * This function masks (disables) all interrupts on the
-  * calling core.
-  *
-  * \returns the previous value of the interrupt mask.
-  * This value can be passed to rtos_interrupt_mask_set()
-  * to restore the interrupt mask to its previous state.
-  */
-inline uint32_t rtos_interrupt_mask_all(void)
+/**
+ * This function masks (disables) all interrupts on the
+ * calling core.
+ *
+ * \returns the previous value of the interrupt mask.
+ * This value can be passed to rtos_interrupt_mask_set()
+ * to restore the interrupt mask to its previous state.
+ */
+inline uint32_t rtos_interrupt_mask_all( void )
 {
     uint32_t mask;
 
-    asm volatile(
-        "getsr r11," RTOS_STRINGIFY(XS1_SR_IEBLE_MASK) "\n"
-        "mov %0, r11\n"
-        "clrsr " RTOS_STRINGIFY(XS1_SR_IEBLE_MASK)
-        : "=r"(mask)
+    asm volatile (
+        "getsr r11," RTOS_STRINGIFY( XS1_SR_IEBLE_MASK ) "\n"
+                                                         "mov %0, r11\n"
+                                                         "clrsr " RTOS_STRINGIFY( XS1_SR_IEBLE_MASK )
+        : "=r" ( mask )
         : /* no inputs */
         : /* clobbers */ "r11", "memory"
-    );
+        );
 
     return mask;
 }
@@ -178,14 +178,14 @@ inline uint32_t rtos_interrupt_mask_all(void)
  * This function unmasks (enables) all interrupts on the
  * calling core.
  */
-inline void rtos_interrupt_unmask_all(void)
+inline void rtos_interrupt_unmask_all( void )
 {
-    asm volatile(
-        "setsr" RTOS_STRINGIFY(XS1_SR_IEBLE_MASK)
+    asm volatile (
+        "setsr" RTOS_STRINGIFY( XS1_SR_IEBLE_MASK )
         : /* no outputs */
         : /* no inputs */
         : /* clobbers */ "memory"
-    );
+        );
 }
 
 /**
@@ -194,11 +194,12 @@ inline void rtos_interrupt_unmask_all(void)
  *
  * \param mask The value to set the interrupt mask to.
  */
-inline void rtos_interrupt_mask_set(uint32_t mask)
+inline void rtos_interrupt_mask_set( uint32_t mask )
 {
-   if (mask != 0) {
-       rtos_interrupt_unmask_all();
-   }
+    if( mask != 0 )
+    {
+        rtos_interrupt_unmask_all();
+    }
 }
 
 /*
@@ -207,17 +208,17 @@ inline void rtos_interrupt_mask_set(uint32_t mask)
  *
  * \returns non-zero when called from within an ISR or kcall.
  */
-inline uint32_t rtos_isr_running(void)
+inline uint32_t rtos_isr_running( void )
 {
     uint32_t kernel_mode;
 
-    asm volatile(
-        "getsr r11," RTOS_STRINGIFY(XS1_SR_INK_MASK) "\n"
-        "mov %0, r11"
-        : "=r"(kernel_mode)
+    asm volatile (
+        "getsr r11," RTOS_STRINGIFY( XS1_SR_INK_MASK ) "\n"
+                                                       "mov %0, r11"
+        : "=r" ( kernel_mode )
         : /* no inputs */
         : /* clobbers */ "r11"
-    );
+        );
 
     return kernel_mode;
 }

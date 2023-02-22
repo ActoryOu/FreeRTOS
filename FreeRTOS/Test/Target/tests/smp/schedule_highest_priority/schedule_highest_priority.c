@@ -191,7 +191,7 @@ void tearDown( void )
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
-        if( xTaskHanldes[ i ] )
+        if( xTaskHanldes[ i ] != NULL )
         {
             vTaskDelete( xTaskHanldes[ i ] );
         }

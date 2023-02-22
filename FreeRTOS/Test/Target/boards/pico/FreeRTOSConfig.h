@@ -100,11 +100,11 @@
  */
 
 /* SMP port only */
-#define configNUMBER_OF_CORES                2
+#define configNUMBER_OF_CORES              2
 
 /* RP2040 specific */
-#define configSUPPORT_PICO_SYNC_INTEROP      1
-#define configSUPPORT_PICO_TIME_INTEROP      1
+#define configSUPPORT_PICO_SYNC_INTEROP    1
+#define configSUPPORT_PICO_TIME_INTEROP    1
 
 #include <assert.h>
 /* Define to trap errors during development. */

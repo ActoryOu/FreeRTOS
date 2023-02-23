@@ -63,6 +63,10 @@
 #if ( configUSE_TASK_PREEMPTION_DISABLE != 1 )
     #error Need to include testConfig.h in FreeRTOSConfig.h
 #endif /* if configUSE_TASK_PREEMPTION_DISABLE != 1 */
+
+#if ( configMAX_PRIORITIES <= 3 )
+    #error configMAX_PRIORITIES must be larger than 3 to avoid scheduling idle tasks unexpectly.
+#endif /* if ( configMAX_PRIORITIES <= 3 ) */
 /*-----------------------------------------------------------*/
 
 /**
@@ -193,7 +197,7 @@ void setUp( void )
     TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
 
     /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
-    for( i = 1; i < configNUMBER_OF_CORES + 1; i++ )
+    for( i = 1; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
         xTaskCreationResult = xTaskCreate( prvEverRunningTask,
                                            "EverRunning",
@@ -213,7 +217,7 @@ void tearDown( void )
     int i;
 
     /* Delete all the tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES + 1; i++ )
+    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
         if( xTaskHanldes[ i ] != NULL )
         {

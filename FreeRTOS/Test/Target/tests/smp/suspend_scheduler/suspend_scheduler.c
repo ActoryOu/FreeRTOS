@@ -76,11 +76,15 @@ static void prvTaskSetFlag( void * pvParameters );
 
 #if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
-#endif /* if configNUMBER_OF_CORES != 2 */
+#endif /* if ( configNUMBER_OF_CORES < 2 ) */
 
-#if configRUN_MULTIPLE_PRIORITIES != 1
+#if ( configRUN_MULTIPLE_PRIORITIES != 1 )
     #error test_config.h must be included at the end of FreeRTOSConfig.h.
-#endif /* if configRUN_MULTIPLE_PRIORITIES != 1 */
+#endif /* if ( configRUN_MULTIPLE_PRIORITIES != 1 ) */
+
+#if ( configMAX_PRIORITIES <= 3 )
+    #error configMAX_PRIORITIES must be larger than 3 to avoid scheduling idle tasks unexpectly.
+#endif /* if ( configMAX_PRIORITIES <= 3 ) */
 /*-----------------------------------------------------------*/
 
 /**
@@ -141,7 +145,7 @@ static void prvTaskSuspendScheduler( void * pvParameters )
     /* Raise T1~Tn-1's task priority to higher than T0. */
     for( i = 1; i < configNUMBER_OF_CORES; i++ )
     {
-        vTaskPrioritySet( xTaskHanldes[ i ], tskIDLE_PRIORITY + 3 );
+        vTaskPrioritySet( xTaskHanldes[ i ], configMAX_PRIORITIES - 1 );
     }
 
     for( i = 0; i < TEST_T0_POLLING_TIME; i++ )
@@ -196,7 +200,7 @@ void setUp( void )
                                        "SuspendScheduler",
                                        configMINIMAL_STACK_SIZE,
                                        NULL,
-                                       tskIDLE_PRIORITY + 2,
+                                       configMAX_PRIORITIES - 2,
                                        &( xTaskHanldes[ 0 ] ) );
 
     TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
@@ -208,7 +212,7 @@ void setUp( void )
                                            "SetFlag",
                                            configMINIMAL_STACK_SIZE,
                                            NULL,
-                                           tskIDLE_PRIORITY + 1,
+                                           configMAX_PRIORITIES - 3,
                                            &( xTaskHanldes[ i ] ) );
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );

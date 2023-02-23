@@ -54,10 +54,6 @@
 #if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
 #endif /* if configNUMBER_OF_CORES != 2 */
-
-#if ( configUSE_TASK_PREEMPTION_DISABLE != 1 )
-    #error Need to include testConfig.h in FreeRTOSConfig.h
-#endif /* if configRUN_MULTIPLE_PRIORITIES != 0 */
 /*-----------------------------------------------------------*/
 
 /**
@@ -68,13 +64,13 @@ void Test_ScheduleAffinity( void );
 /**
  * @brief Function that checks if it's pinned to correct core.
  */
-static void vPrvTaskCheckPinCore( void * pvParameters );
+static void prvTaskCheckPinCore( void * pvParameters );
 
 /**
  * @brief Function that returns which index does the xCurrentTaskHandle match.
  *        0 for T0, 1 for T1, -1 for not match.
  */
-static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
+static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
 /*-----------------------------------------------------------*/
 
 /**
@@ -88,48 +84,48 @@ static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
 static BaseType_t xHasTaskFinished[ configNUMBER_OF_CORES ] = { pdFALSE };
 /*-----------------------------------------------------------*/
 
-static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
+static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
 {
     int i = 0;
-    int lMatchIdx = -1;
+    int matchIdx = -1;
 
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
         if( xCurrentTaskHandle == xTaskHanldes[ i ] )
         {
-            lMatchIdx = i;
+            matchIdx = i;
             break;
         }
     }
 
-    return lMatchIdx;
+    return matchIdx;
 }
 /*-----------------------------------------------------------*/
 
-static void vPrvTaskCheckPinCore( void * pvParameters )
+static void prvTaskCheckPinCore( void * pvParameters )
 {
-    int lCurrentTaskIdx = -1;
+    int currentTaskIdx = -1;
     uint32_t ulIter;
     BaseType_t xCore;
 
     ( void ) pvParameters;
 
-    lCurrentTaskIdx = lFindTaskIdx( xTaskGetCurrentTaskHandle() );
-    TEST_ASSERT_TRUE( lCurrentTaskIdx >= 0 && lCurrentTaskIdx < configNUMBER_OF_CORES );
+    currentTaskIdx = prvFindTaskIdx( xTaskGetCurrentTaskHandle() );
+    TEST_ASSERT_TRUE( currentTaskIdx >= 0 && currentTaskIdx < configNUMBER_OF_CORES );
 
     for( ulIter = 1; ulIter < 25; ulIter++ )
     {
         vTaskDelay( pdMS_TO_TICKS( 10 ) );
         xCore = portGET_CORE_ID();
 
-        if( xCore != lCurrentTaskIdx )
+        if( xCore != currentTaskIdx )
         {
-            TEST_ASSERT_EQUAL_INT( xCore, lCurrentTaskIdx );
+            TEST_ASSERT_EQUAL_INT( xCore, currentTaskIdx );
             break;
         }
     }
 
-    xHasTaskFinished[ lCurrentTaskIdx ] = pdTRUE;
+    xHasTaskFinished[ currentTaskIdx ] = pdTRUE;
 
     /* idle the task */
     for( ; ; )
@@ -149,7 +145,7 @@ void Test_ScheduleAffinity( void )
     {
         vTaskDelay( pdMS_TO_TICKS( 100 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -171,7 +167,7 @@ void setUp( void )
     /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
-        xTaskCreationResult = xTaskCreateAffinitySet( vPrvTaskCheckPinCore,
+        xTaskCreationResult = xTaskCreateAffinitySet( prvTaskCheckPinCore,
                                                       "CheckPinCore",
                                                       configMINIMAL_STACK_SIZE,
                                                       NULL,
@@ -192,7 +188,7 @@ void tearDown( void )
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
-        if( xTaskHanldes[ i ] )
+        if( xTaskHanldes[ i ] != NULL )
         {
             vTaskDelete( xTaskHanldes[ i ] );
         }

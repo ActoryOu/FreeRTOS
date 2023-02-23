@@ -29,8 +29,8 @@
  * @brief Only one task shall be able to enter the section protected by vTaskSuspendAll/xTaskResumeAll.
  *
  * Procedure:
- *   - Create ( num of cores - 1 ) tasks.
- *   - All tasks (including test runner) increase the counter for TASK_INCREASE_COUNTER_TIMES times.
+ *   - Create ( num of cores ) tasks.
+ *   - All tasks increase the counter for TASK_INCREASE_COUNTER_TIMES times.
  *     - Call vTaskSuspendAll.
  *     - Increase the counter for TASK_INCREASE_COUNTER_TIMES times.
  *     - Call xTaskResumeAll.
@@ -57,13 +57,17 @@
 #define TEST_TIMEOUT_MS                ( 10000 )
 /*-----------------------------------------------------------*/
 
-#if configNUMBER_OF_CORES < 2
+#if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
-#endif /* if configNUMBER_OF_CORES < 2 */
+#endif /* if ( configNUMBER_OF_CORES < 2 ) */
 
-#if configRUN_MULTIPLE_PRIORITIES != 1
+#if ( configRUN_MULTIPLE_PRIORITIES != 1 )
     #error test_config.h must be included at the end of FreeRTOSConfig.h.
-#endif /* #if configRUN_MULTIPLE_PRIORITIES != 1 */
+#endif /* if ( configRUN_MULTIPLE_PRIORITIES != 1 ) */
+
+#if ( configMAX_PRIORITIES <= 1 )
+    #error configMAX_PRIORITIES must be larger than 1 to avoid scheduling idle tasks unexpectly.
+#endif /* if ( configMAX_PRIORITIES <= 2 ) */
 /*-----------------------------------------------------------*/
 
 /**
@@ -90,7 +94,7 @@ static void loopIncCounter( void );
 /**
  * @brief Handles of the tasks created in this test.
  */
-static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES - 1 ];
+static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
 
 /**
  * @brief Counter for all tasks to increase.
@@ -102,11 +106,8 @@ static void Test_OnlyOneTaskEnterSuspendAll( void )
 {
     TickType_t xStartTick = xTaskGetTickCount();
 
-    /* Yield for other cores to run tasks. */
-    taskYIELD();
-
-    /* We need at least two tasks increasing the counter at the same time when configNUMBER_OF_CORES is 2 */
-    loopIncCounter();
+    /* Delay for other cores to run tasks. */
+    vTaskDelay( pdMS_TO_TICKS( 10 ) );
 
     /* Wait other tasks. */
     while( xTaskCounter < configNUMBER_OF_CORES * TASK_INCREASE_COUNTER_TIMES )
@@ -170,8 +171,8 @@ void setUp( void )
     int i;
     BaseType_t xTaskCreationResult;
 
-    /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES - 1; i++ )
+    /* Create configNUMBER_OF_CORES low priority tasks. */
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
         xTaskCreationResult = xTaskCreate( prvTaskIncCounter,
                                            "IncCounter",
@@ -191,7 +192,7 @@ void tearDown( void )
     int i;
 
     /* Delete all the tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES - 1; i++ )
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
         if( xTaskHanldes[ i ] != NULL )
         {

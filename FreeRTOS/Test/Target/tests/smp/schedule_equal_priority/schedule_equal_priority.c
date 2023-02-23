@@ -58,6 +58,10 @@
 #if ( configUSE_TIME_SLICING != 1 )
     #error test_config.h must be included at the end of FreeRTOSConfig.h.
 #endif /* if configUSE_TIME_SLICING != 1 */
+
+#if ( configMAX_PRIORITIES <= 2 )
+    #error configMAX_PRIORITIES must be larger than 2 to avoid scheduling idle tasks unexpectly.
+#endif /* if ( configMAX_PRIORITIES <= 2 ) */
 /*-----------------------------------------------------------*/
 
 /**
@@ -98,7 +102,7 @@ static BaseType_t xAreAllTasksRun( void )
     int i;
     BaseType_t xIsAllTasksRun = pdTRUE;
 
-    for( i = 0; i < configNUMBER_OF_CORES + 1; i++ )
+    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
         if( xTaskRun[ i ] != pdTRUE )
         {
@@ -115,7 +119,7 @@ static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
     int i = 0;
     int matchIdx = -1;
 
-    for( i = 0; i < configNUMBER_OF_CORES + 1; i++ )
+    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
         if( xCurrentTaskHandle == xTaskHanldes[ i ] )
         {
@@ -173,7 +177,7 @@ void setUp( void )
     BaseType_t xTaskCreationResult;
 
     /* Create configNUMBER_OF_CORES + 1 low priority tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES + 1; i++ )
+    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
         xTaskCreationResult = xTaskCreate( prvEverRunningTask,
                                            "EverRun",
@@ -193,7 +197,7 @@ void tearDown( void )
     int i;
 
     /* Delete all the tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES + 1; i++ )
+    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
         if( xTaskHanldes[ i ] != NULL )
         {

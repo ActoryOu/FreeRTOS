@@ -77,12 +77,12 @@ BaseType_t Test_TaskRemoteDelete( void );
 /**
  * @brief Task entry to delete itself.
  */
-static void vPrvSelfDeleteTask( void * pvParameters );
+static void prvSelfDeleteTask( void * pvParameters );
 
 /**
  * @brief Task entry to loop in delay.
  */
-static void vPrvDelayTask( void * pvParameters );
+static void prvDelayTask( void * pvParameters );
 /*-----------------------------------------------------------*/
 
 /**
@@ -121,7 +121,7 @@ BaseType_t Test_TaskSelfDelete( void )
     {
         xTaskHanldes[ i ] = NULL;
 
-        xTaskCreationResult = xTaskCreate( vPrvSelfDeleteTask,
+        xTaskCreationResult = xTaskCreate( prvSelfDeleteTask,
                                            "SelfDel",
                                            configMINIMAL_STACK_SIZE,
                                            NULL,
@@ -141,7 +141,7 @@ BaseType_t Test_TaskSelfDelete( void )
     {
         vTaskDelay( pdMS_TO_TICKS( 10 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -169,7 +169,7 @@ BaseType_t Test_TaskRemoteDelete( void )
     {
         xTaskHanldes[ i ] = NULL;
 
-        xTaskCreationResult = xTaskCreate( vPrvDelayTask,
+        xTaskCreationResult = xTaskCreate( prvDelayTask,
                                            "KeepDelay",
                                            configMINIMAL_STACK_SIZE,
                                            NULL,
@@ -201,7 +201,7 @@ BaseType_t Test_TaskRemoteDelete( void )
     {
         vTaskDelay( pdMS_TO_TICKS( 10 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -217,7 +217,7 @@ BaseType_t Test_TaskRemoteDelete( void )
 }
 /*-----------------------------------------------------------*/
 
-static void vPrvSelfDeleteTask( void * pvParameters )
+static void prvSelfDeleteTask( void * pvParameters )
 {
     /* Silence warnings about unused parameters. */
     ( void ) pvParameters;
@@ -233,7 +233,7 @@ static void vPrvSelfDeleteTask( void * pvParameters )
 
 /*-----------------------------------------------------------*/
 
-static void vPrvDelayTask( void * pvParameters )
+static void prvDelayTask( void * pvParameters )
 {
     /* Silence warnings about unused parameters. */
     ( void ) pvParameters;

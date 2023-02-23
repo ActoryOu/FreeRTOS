@@ -62,6 +62,10 @@
 #if ( configUSE_CORE_AFFINITY != 0 )
     #error Need to include testConfig.h in FreeRTOSConfig.h
 #endif /* if configUSE_CORE_AFFINITY != 0 */
+
+#if ( configMAX_PRIORITIES <= configNUMBER_OF_CORES )
+    #error This test creates tasks with different priority, requires configMAX_PRIORITIES to be larger than configNUMBER_OF_CORES.
+#endif /* if configNUMBER_OF_CORES != 2 */
 /*-----------------------------------------------------------*/
 
 /**

@@ -72,13 +72,13 @@ void Test_DisableMultiplePriorities( void );
 /**
  * @brief Function that checks if itself is the only task runs.
  */
-static void vPrvCheckRunningTask( void * pvParameters );
+static void prvCheckRunningTask( void * pvParameters );
 
 /**
  * @brief Function that returns which index does the xCurrentTaskHandle match.
  *        0 for T0, 1 for T1, -1 for not match.
  */
-static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
+static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
 /*-----------------------------------------------------------*/
 
 /**
@@ -92,35 +92,35 @@ static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
 static BaseType_t xHasTaskRun[ configNUMBER_OF_CORES ] = { pdFALSE };
 /*-----------------------------------------------------------*/
 
-static int lFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
+static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
 {
     int i = 0;
-    int lMatchIdx = -1;
+    int matchIdx = -1;
 
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
         if( xCurrentTaskHandle == xTaskHanldes[ i ] )
         {
-            lMatchIdx = i;
+            matchIdx = i;
             break;
         }
     }
 
-    return lMatchIdx;
+    return matchIdx;
 }
 /*-----------------------------------------------------------*/
 
-static void vPrvCheckRunningTask( void * pvParameters )
+static void prvCheckRunningTask( void * pvParameters )
 {
     int i = 0;
-    int lCurrentTaskIdx = lFindTaskIdx( xTaskGetCurrentTaskHandle() );
+    int currentTaskIdx = prvFindTaskIdx( xTaskGetCurrentTaskHandle() );
     eTaskState taskState;
 
     /* Silence warnings about unused parameters. */
     ( void ) pvParameters;
 
-    TEST_ASSERT_TRUE( lCurrentTaskIdx >= 0 && lCurrentTaskIdx < configNUMBER_OF_CORES );
-    xHasTaskRun[ lCurrentTaskIdx ] = pdTRUE;
+    TEST_ASSERT_TRUE( currentTaskIdx >= 0 && currentTaskIdx < configNUMBER_OF_CORES );
+    xHasTaskRun[ currentTaskIdx ] = pdTRUE;
 
     for( ; ; )
     {
@@ -133,7 +133,7 @@ static void vPrvCheckRunningTask( void * pvParameters )
 
             taskState = eTaskGetState( xTaskHanldes[ i ] );
 
-            if( i == lCurrentTaskIdx )
+            if( i == currentTaskIdx )
             {
                 TEST_ASSERT_EQUAL_INT( eRunning, taskState );
             }
@@ -158,7 +158,7 @@ void Test_DisableMultiplePriorities( void )
     {
         vTaskDelay( pdMS_TO_TICKS( 100 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -180,7 +180,7 @@ void setUp( void )
     /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
-        xTaskCreationResult = xTaskCreate( vPrvCheckRunningTask,
+        xTaskCreationResult = xTaskCreate( prvCheckRunningTask,
                                            "CheckRunning",
                                            configMINIMAL_STACK_SIZE * 2,
                                            NULL,
@@ -200,7 +200,7 @@ void tearDown( void )
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
-        if( xTaskHanldes[ i ] )
+        if( xTaskHanldes[ i ] != NULL )
         {
             vTaskDelete( xTaskHanldes[ i ] );
         }

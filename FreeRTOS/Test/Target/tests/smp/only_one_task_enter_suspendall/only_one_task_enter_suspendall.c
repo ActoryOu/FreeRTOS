@@ -55,13 +55,15 @@
  * @brief Timeout value to stop test.
  */
 #define TEST_TIMEOUT_MS                ( 10000 )
-
 /*-----------------------------------------------------------*/
 
-#if configNUMBER_OF_CORES <= 1
-    #error Require two cores be configured for FreeRTOS
-#endif /* if configNUMBER_OF_CORES <= 1 */
+#if configNUMBER_OF_CORES < 2
+    #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
+#endif /* if configNUMBER_OF_CORES < 2 */
 
+#if configRUN_MULTIPLE_PRIORITIES != 1
+    #error test_config.h must be included at the end of FreeRTOSConfig.h.
+#endif /* #if configRUN_MULTIPLE_PRIORITIES != 1 */
 /*-----------------------------------------------------------*/
 
 /**
@@ -72,22 +74,17 @@ static void Test_OnlyOneTaskEnterSuspendAll( void );
 /**
  * @brief Task function to increase counter then keep delaying.
  */
-static void vPrvTaskIncCounter( void * pvParameters );
+static void prvTaskIncCounter( void * pvParameters );
 
 /**
  * @brief Function to increase counter in critical section.
  */
-static void vLoopIncCounter( void );
-
+static void loopIncCounter( void );
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
 #endif /* if configNUMBER_OF_CORES != 2 */
-
-#if configRUN_MULTIPLE_PRIORITIES != 1
-    #error test_config.h must be included at the end of FreeRTOSConfig.h.
-#endif
 /*-----------------------------------------------------------*/
 
 /**
@@ -109,14 +106,14 @@ static void Test_OnlyOneTaskEnterSuspendAll( void )
     taskYIELD();
 
     /* We need at least two tasks increasing the counter at the same time when configNUMBER_OF_CORES is 2 */
-    vLoopIncCounter();
+    loopIncCounter();
 
     /* Wait other tasks. */
     while( xTaskCounter < configNUMBER_OF_CORES * TASK_INCREASE_COUNTER_TIMES )
     {
         vTaskDelay( pdMS_TO_TICKS( 10 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -127,7 +124,7 @@ static void Test_OnlyOneTaskEnterSuspendAll( void )
 
 /*-----------------------------------------------------------*/
 
-static void vLoopIncCounter( void )
+static void loopIncCounter( void )
 {
     BaseType_t xTempTaskCounter = 0;
     BaseType_t xIsTestPass = pdTRUE;
@@ -154,11 +151,11 @@ static void vLoopIncCounter( void )
 }
 /*-----------------------------------------------------------*/
 
-static void vPrvTaskIncCounter( void * pvParameters )
+static void prvTaskIncCounter( void * pvParameters )
 {
     ( void ) pvParameters;
 
-    vLoopIncCounter();
+    loopIncCounter();
 
     while( pdTRUE )
     {
@@ -176,7 +173,7 @@ void setUp( void )
     /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES - 1; i++ )
     {
-        xTaskCreationResult = xTaskCreate( vPrvTaskIncCounter,
+        xTaskCreationResult = xTaskCreate( prvTaskIncCounter,
                                            "IncCounter",
                                            configMINIMAL_STACK_SIZE,
                                            NULL,
@@ -196,7 +193,7 @@ void tearDown( void )
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES - 1; i++ )
     {
-        if( xTaskHanldes[ i ] )
+        if( xTaskHanldes[ i ] != NULL )
         {
             vTaskDelete( xTaskHanldes[ i ] );
         }

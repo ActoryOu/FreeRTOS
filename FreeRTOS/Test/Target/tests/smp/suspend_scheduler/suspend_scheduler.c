@@ -32,9 +32,9 @@
  *   - Create ( num of cores ) tasks (T0~Tn-1).
  *   - Task T0 has higher priority then T1~Tn-1. Priority T0 > T1~Tn-1.
  *   - Task T0 calls vTaskSuspendAll.
- *   - Task T0 raises priority of task T1. Priority T1~Tn-1 > T0.
+ *   - Task T0 raises priority of task T1~Tn-1. Priority T1~Tn-1 > T0.
  *   - Task T0 calls xTaskResumeAll.
- *   - Task T1 Runs.
+ *   - Task T1~Tn-1 Runs.
  * Expected:
  *   - T1~Tn-1 shouldn't run before T0 calls xTaskResumeAll.
  *   - T1~Tn-1 should run after T0 calls xTaskResumeAll immediately.
@@ -66,12 +66,12 @@ static void Test_SuspendScheduler( void );
 /**
  * @brief Task function for T0.
  */
-static void vPrvTaskSuspendScheduler( void * pvParameters );
+static void prvTaskSuspendScheduler( void * pvParameters );
 
 /**
  * @brief Task function for other tasks.
  */
-static void vPrvTaskSetFlag( void * pvParameters );
+static void prvTaskSetFlag( void * pvParameters );
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
@@ -81,10 +81,6 @@ static void vPrvTaskSetFlag( void * pvParameters );
 #if configRUN_MULTIPLE_PRIORITIES != 1
     #error test_config.h must be included at the end of FreeRTOSConfig.h.
 #endif /* if configRUN_MULTIPLE_PRIORITIES != 1 */
-
-#if configUSE_CORE_AFFINITY != 1
-    #error test_config.h must be included at the end of FreeRTOSConfig.h.
-#endif /* if configUSE_CORE_AFFINITY != 1 */
 /*-----------------------------------------------------------*/
 
 /**
@@ -120,7 +116,7 @@ static void Test_SuspendScheduler( void )
     {
         vTaskDelay( pdMS_TO_TICKS( 10 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -131,9 +127,10 @@ static void Test_SuspendScheduler( void )
 }
 /*-----------------------------------------------------------*/
 
-static void vPrvTaskSuspendScheduler( void * pvParameters )
+static void prvTaskSuspendScheduler( void * pvParameters )
 {
     uint32_t i = 0;
+    BaseType_t xOtherTaskRunWithT0 = pdFALSE;
 
     ( void ) pvParameters;
 
@@ -155,9 +152,11 @@ static void vPrvTaskSuspendScheduler( void * pvParameters )
         }
     }
 
-    TEST_ASSERT_TRUE( xHasOtherTaskRun == pdFALSE );
+    xOtherTaskRunWithT0 = xHasOtherTaskRun;
 
     ( void ) xTaskResumeAll();
+
+    TEST_ASSERT_TRUE( xOtherTaskRunWithT0 == pdFALSE );
 
     xHasTaskT0Run = pdTRUE;
 
@@ -168,7 +167,7 @@ static void vPrvTaskSuspendScheduler( void * pvParameters )
 }
 /*-----------------------------------------------------------*/
 
-static void vPrvTaskSetFlag( void * pvParameters )
+static void prvTaskSetFlag( void * pvParameters )
 {
     ( void ) pvParameters;
 
@@ -193,7 +192,7 @@ void setUp( void )
     int i;
     BaseType_t xTaskCreationResult;
 
-    xTaskCreationResult = xTaskCreate( vPrvTaskSuspendScheduler,
+    xTaskCreationResult = xTaskCreate( prvTaskSuspendScheduler,
                                        "SuspendScheduler",
                                        configMINIMAL_STACK_SIZE,
                                        NULL,
@@ -205,7 +204,7 @@ void setUp( void )
     /* Create configNUMBER_OF_CORES low priority tasks. */
     for( i = 1; i < configNUMBER_OF_CORES; i++ )
     {
-        xTaskCreationResult = xTaskCreate( vPrvTaskSetFlag,
+        xTaskCreationResult = xTaskCreate( prvTaskSetFlag,
                                            "SetFlag",
                                            configMINIMAL_STACK_SIZE,
                                            NULL,
@@ -225,7 +224,7 @@ void tearDown( void )
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
-        if( xTaskHanldes[ i ] )
+        if( xTaskHanldes[ i ] != NULL )
         {
             vTaskDelete( xTaskHanldes[ i ] );
         }

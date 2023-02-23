@@ -38,7 +38,6 @@
 *
 * See http://www.freertos.org/a00110.html
 *----------------------------------------------------------*/
-#include "test_config.h"
 
 /* Scheduler Related */
 #define configUSE_TICKLESS_IDLE                    0
@@ -57,7 +56,6 @@
 #define configUSE_COUNTING_SEMAPHORES              1
 #define configQUEUE_REGISTRY_SIZE                  8
 #define configUSE_QUEUE_SETS                       1
-#define configUSE_TIME_SLICING                     1
 #define configUSE_NEWLIB_REENTRANT                 0
 #define configENABLE_BACKWARD_COMPATIBILITY        0
 #define configNUM_THREAD_LOCAL_STORAGE_POINTERS    5
@@ -101,16 +99,12 @@
  */
 
 /* SMP port only */
-#define configNUMBER_OF_CORES                2
-#define configTICK_CORE                      1
-#define configRUN_MULTIPLE_PRIORITIES        1
-#define configUSE_CORE_AFFINITY              1
-#define configUSE_MINIMAL_IDLE_HOOK          0
-#define configUSE_TASK_PREEMPTION_DISABLE    0
+#define configNUMBER_OF_CORES              2
+#define configTICK_CORE                    1
 
 /* RP2040 specific */
-#define configSUPPORT_PICO_SYNC_INTEROP      1
-#define configSUPPORT_PICO_TIME_INTEROP      1
+#define configSUPPORT_PICO_SYNC_INTEROP    1
+#define configSUPPORT_PICO_TIME_INTEROP    1
 
 #include <assert.h>
 /* Define to trap errors during development. */
@@ -135,5 +129,7 @@
 #define INCLUDE_xTaskResumeFromISR             1
 #define INCLUDE_xQueueGetMutexHolder           1
 /* A header file that defines trace macro can be included here. */
+
+#include "test_config.h"
 
 #endif /* FREERTOS_CONFIG_H */

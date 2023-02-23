@@ -136,7 +136,7 @@ static void prvDisablePreemptionTask( void * pvParameters )
 
     for( ; ; )
     {
-        if( ( xTaskGetTickCount() - xT0StartTick ) / portTICK_PERIOD_MS >= TEST_T0_BUSY_TIME_MS )
+        if( ( xTaskGetTickCount() - xT0StartTick ) >= pdMS_TO_TICKS( TEST_T0_BUSY_TIME_MS ) )
         {
             break;
         }
@@ -167,7 +167,7 @@ void Test_DisablePreemption( void )
     {
         vTaskDelay( pdMS_TO_TICKS( 100 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -215,7 +215,7 @@ void tearDown( void )
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES + 1; i++ )
     {
-        if( xTaskHanldes[ i ] )
+        if( xTaskHanldes[ i ] != NULL )
         {
             vTaskDelete( xTaskHanldes[ i ] );
             xTaskHanldes[ i ] = 0;

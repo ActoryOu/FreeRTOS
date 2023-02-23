@@ -50,11 +50,15 @@
 
 #if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
-#endif /* if configNUMBER_OF_CORES != 2 */
+#endif /* if ( configNUMBER_OF_CORES < 2 ) */
 
-#if configRUN_MULTIPLE_PRIORITIES != 1
+#if ( configRUN_MULTIPLE_PRIORITIES != 1 )
     #error test_config.h must be included at the end of FreeRTOSConfig.h.
-#endif
+#endif /* if ( configRUN_MULTIPLE_PRIORITIES != 1 ) */
+
+#if ( configMAX_PRIORITIES <= 3 )
+    #error configMAX_PRIORITIES must be larger than 3 to avoid scheduling idle tasks unexpectly.
+#endif /* if ( configMAX_PRIORITIES <= 3 ) */
 /*-----------------------------------------------------------*/
 
 /**
@@ -71,7 +75,6 @@ static void prvEverRunningTask( void * pvParameters );
  * @brief Test case "Interrupt Wait Critical".
  */
 static void Test_InterruptWaitCritical( void );
-
 /*-----------------------------------------------------------*/
 
 typedef enum CriticalStatus

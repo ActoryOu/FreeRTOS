@@ -60,12 +60,12 @@ void Test_OnlyOneTaskEnterCritical( void );
 /**
  * @brief Task function to increase counter then keep delaying.
  */
-static void vPrvTaskIncCounter( void * pvParameters );
+static void prvTaskIncCounter( void * pvParameters );
 
 /**
  * @brief Function to increase counter in critical section.
  */
-static void vLoopIncCounter( void );
+static void loopIncCounter( void );
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
@@ -96,14 +96,14 @@ void Test_OnlyOneTaskEnterCritical( void )
     taskYIELD();
 
     /* We need at least two tasks increasing the counter at the same time when configNUMBER_OF_CORES is 2 */
-    vLoopIncCounter();
+    loopIncCounter();
 
     /* Wait other tasks. */
     while( xTaskCounter < configNUMBER_OF_CORES * TASK_INCREASE_COUNTER_TIMES )
     {
         vTaskDelay( pdMS_TO_TICKS( 10 ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) / portTICK_PERIOD_MS >= TEST_TIMEOUT_MS )
+        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
         {
             break;
         }
@@ -113,7 +113,7 @@ void Test_OnlyOneTaskEnterCritical( void )
 }
 /*-----------------------------------------------------------*/
 
-static void vLoopIncCounter( void )
+static void loopIncCounter( void )
 {
     BaseType_t xTempTaskCounter = 0;
     BaseType_t xIsTestPass = pdTRUE;
@@ -139,13 +139,13 @@ static void vLoopIncCounter( void )
     TEST_ASSERT_TRUE( xIsTestPass );
 }
 
-static void vPrvTaskIncCounter( void * pvParameters )
+static void prvTaskIncCounter( void * pvParameters )
 {
     ( void ) pvParameters;
 
-    vLoopIncCounter();
+    loopIncCounter();
 
-    while( pdTRUE )
+    for( ; ; )
     {
         vTaskDelay( pdMS_TO_TICKS( 100 ) );
     }
@@ -161,7 +161,7 @@ void setUp( void )
     /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES - 1; i++ )
     {
-        xTaskCreationResult = xTaskCreate( vPrvTaskIncCounter,
+        xTaskCreationResult = xTaskCreate( prvTaskIncCounter,
                                            "IncCounter",
                                            configMINIMAL_STACK_SIZE,
                                            NULL,
@@ -181,7 +181,7 @@ void tearDown( void )
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES - 1; i++ )
     {
-        if( xTaskHanldes[ i ] )
+        if( xTaskHanldes[ i ] != NULL )
         {
             vTaskDelete( xTaskHanldes[ i ] );
         }

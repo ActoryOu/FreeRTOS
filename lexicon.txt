@@ -489,6 +489,7 @@ ctxbuffer
 ctxlock
 ctxstring
 curbyte
+currenttaskidx
 currentthread
 curson
 cvore

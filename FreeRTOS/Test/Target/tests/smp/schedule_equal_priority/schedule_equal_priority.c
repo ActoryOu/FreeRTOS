@@ -113,18 +113,18 @@ static BaseType_t xAreAllTasksRun( void )
 static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
 {
     int i = 0;
-    int lMatchIdx = -1;
+    int matchIdx = -1;
 
     for( i = 0; i < configNUMBER_OF_CORES + 1; i++ )
     {
         if( xCurrentTaskHandle == xTaskHanldes[ i ] )
         {
-            lMatchIdx = i;
+            matchIdx = i;
             break;
         }
     }
 
-    return lMatchIdx;
+    return matchIdx;
 }
 /*-----------------------------------------------------------*/
 

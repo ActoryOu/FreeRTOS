@@ -54,6 +54,10 @@
 #if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
 #endif /* if configNUMBER_OF_CORES != 2 */
+
+#if ( configMAX_PRIORITIES <= 2 )
+    #error configMAX_PRIORITIES must be larger than 2 to avoid scheduling idle tasks unexpectly.
+#endif /* if ( configMAX_PRIORITIES <= 2 ) */
 /*-----------------------------------------------------------*/
 
 /**

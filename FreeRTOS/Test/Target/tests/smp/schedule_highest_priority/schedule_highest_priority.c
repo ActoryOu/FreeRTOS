@@ -69,17 +69,14 @@ static void prvEverRunningTask( void * pvParameters );
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Handle of the testRunner task.
+ */
+static TaskHandle_t xTestRunnerTaskHanlde;
+
+/**
  * @brief Handles of the tasks created in this test.
  */
 static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
-
-/**
- * @brief A flag to indicate if test case is finished.
- *        pdFALSE = not complete yet
- *        pdPASS  = pass
- *        others  = fail with code
- */
-static BaseType_t xIsTestFinished = pdFALSE;
 /*-----------------------------------------------------------*/
 
 static void prvEverRunningTask( void * pvParameters )
@@ -98,18 +95,24 @@ static void prvEverRunningTask( void * pvParameters )
          * priority tasks is of running state. */
         if( eRunning != xTaskState )
         {
+            while( xTestRunnerTaskHanlde == NULL )
+            {
+                /* Waiting testRunner to update xTestRunnerTaskHanlde. */
+                vTaskDelay( pdMS_TO_TICKS( 10 ) );
+            }
+
             /* Generate error code corresponds to task index.
-             * Task 0: -1
-             * Task 1: -2
+             * Task 0: 0x10
+             * Task 1: 0x11
              * ... */
-            xIsTestFinished = -1 - currentTaskIdx;
+            ( void ) xTaskNotify( xTestRunnerTaskHanlde, ( uint32_t ) ( currentTaskIdx + 0x10 ), eSetValueWithoutOverwrite );
         }
     }
 
     /* If the task is the last task, then we finish the check because all tasks are checked. */
-    if( ( currentTaskIdx == ( configNUMBER_OF_CORES - 1 ) ) && ( xIsTestFinished == pdFALSE ) )
+    if( currentTaskIdx == ( configNUMBER_OF_CORES - 1 ) )
     {
-        xIsTestFinished = pdPASS;
+        ( void ) xTaskNotify( xTestRunnerTaskHanlde, ( uint32_t ) ( pdPASS ), eSetValueWithoutOverwrite );
     }
 
     for( ; ; )
@@ -122,20 +125,20 @@ static void prvEverRunningTask( void * pvParameters )
 
 void Test_ScheduleHighestPirority( void )
 {
+    uint32_t ulNotifiedValue;
     TickType_t xStartTick = xTaskGetTickCount();
 
-    /* Wait other tasks. */
-    while( xIsTestFinished == pdFALSE )
+    xTestRunnerTaskHanlde = xTaskGetCurrentTaskHandle();
+
+    if( xTaskNotifyWait( 0x00, ULONG_MAX, &ulNotifiedValue, pdMS_TO_TICKS( TEST_TIMEOUT_MS ) ) != pdTRUE )
     {
-        vTaskDelay( pdMS_TO_TICKS( 100 ) );
-
-        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
-        {
-            break;
-        }
+        /* Timeout, test fail. */
+        TEST_ASSERT_TRUE( pdFALSE );
     }
-
-    TEST_ASSERT_EQUAL_INT( pdPASS, xIsTestFinished );
+    else
+    {
+        TEST_ASSERT_EQUAL_INT( pdPASS, ulNotifiedValue );
+    }
 }
 /*-----------------------------------------------------------*/
 

@@ -134,10 +134,7 @@ static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
 
 static void prvEverRunningTask( void * pvParameters )
 {
-    int currentTaskIdx = prvFindTaskIdx( xTaskGetCurrentTaskHandle() );
-
-    /* Silence warnings about unused parameters. */
-    ( void ) pvParameters;
+    int currentTaskIdx = ( int ) pvParameters;
 
     /* Set the flag for testRunner to check whether all tasks have run. */
     xTaskRun[ currentTaskIdx ] = pdTRUE;
@@ -153,10 +150,9 @@ static void prvEverRunningTask( void * pvParameters )
 void Test_ScheduleEqualPriority( void )
 {
     TickType_t xStartTick = xTaskGetTickCount();
-    BaseType_t xAllTasksRun;
 
     /* Wait other tasks. */
-    while( ( xAllTasksRun = xAreAllTasksRun() ) == pdFALSE )
+    while( xAreAllTasksRun() == pdFALSE )
     {
         vTaskDelay( pdMS_TO_TICKS( 10 ) );
 
@@ -166,7 +162,7 @@ void Test_ScheduleEqualPriority( void )
         }
     }
 
-    TEST_ASSERT_TRUE( xAllTasksRun );
+    TEST_ASSERT_TRUE( xAreAllTasksRun() );
 }
 /*-----------------------------------------------------------*/
 
@@ -182,7 +178,7 @@ void setUp( void )
         xTaskCreationResult = xTaskCreate( prvEverRunningTask,
                                            "EverRun",
                                            configMINIMAL_STACK_SIZE,
-                                           NULL,
+                                           ( void * ) i,
                                            configMAX_PRIORITIES - 2,
                                            &( xTaskHanldes[ i ] ) );
 

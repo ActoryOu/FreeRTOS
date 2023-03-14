@@ -66,12 +66,6 @@ void Test_ScheduleHighestPirority( void );
  * @brief Function that implements a never blocking FreeRTOS task.
  */
 static void prvEverRunningTask( void * pvParameters );
-
-/**
- * @brief Function that returns which index does the xCurrentTaskHandle match.
- *        0 for T0, 1 for T1, -1 for not match.
- */
-static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
 /*-----------------------------------------------------------*/
 
 /**
@@ -81,58 +75,41 @@ static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
 
 /**
  * @brief A flag to indicate if test case is finished.
+ *        pdFALSE = not complete yet
+ *        pdPASS  = pass
+ *        others  = fail with code
  */
 static BaseType_t xIsTestFinished = pdFALSE;
-/*-----------------------------------------------------------*/
-
-static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
-{
-    int i = 0;
-    int matchIdx = -1;
-
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
-    {
-        if( xCurrentTaskHandle == xTaskHanldes[ i ] )
-        {
-            matchIdx = i;
-            break;
-        }
-    }
-
-    return matchIdx;
-}
 /*-----------------------------------------------------------*/
 
 static void prvEverRunningTask( void * pvParameters )
 {
     int i = 0;
-    int currentTaskIdx = prvFindTaskIdx( xTaskGetCurrentTaskHandle() );
-    eTaskState taskState;
-
-    /* Silence warnings about unused parameters. */
-    ( void ) pvParameters;
+    int currentTaskIdx = ( int ) pvParameters;
+    eTaskState xTaskState;
 
     for( i = 0; i < currentTaskIdx; i++ )
     {
-        /* The tasks with higher priority must be created first. On the other hand,
-         * If the task is not created yet, the following tasks are not created. */
-        if( xTaskHanldes[ i ] == NULL )
+        xTaskState = eTaskGetState( xTaskHanldes[ i ] );
+
+        /* Tasks created in this test are of descending priority order. For example,
+         * priority of T0 is higher than priority of T1. A lower priority task is able
+         * to run only when the higher priority tasks are running. Verify that higher
+         * priority tasks is of running state. */
+        if( eRunning != xTaskState )
         {
-            TEST_ASSERT_TRUE( xTaskHanldes[ i ] != NULL );
-            break;
+            /* Generate error code corresponds to task index.
+             * Task 0: -1
+             * Task 1: -2
+             * ... */
+            xIsTestFinished = -1 - currentTaskIdx;
         }
-
-        taskState = eTaskGetState( xTaskHanldes[ i ] );
-
-        /* Because priority of T0 > T1 > ... > Tn-1, the tasks, whose index is lower than currentTaskIdx,
-         * have higher priority. So they must be in running state. */
-        TEST_ASSERT_EQUAL_INT( eRunning, taskState );
     }
 
     /* If the task is the last task, then we finish the check because all tasks are checked. */
-    if( currentTaskIdx == ( configNUMBER_OF_CORES - 1 ) )
+    if( ( currentTaskIdx == ( configNUMBER_OF_CORES - 1 ) ) && ( xIsTestFinished == pdFALSE ) )
     {
-        xIsTestFinished = pdTRUE;
+        xIsTestFinished = pdPASS;
     }
 
     for( ; ; )
@@ -158,7 +135,7 @@ void Test_ScheduleHighestPirority( void )
         }
     }
 
-    TEST_ASSERT_TRUE( xIsTestFinished == pdTRUE );
+    TEST_ASSERT_EQUAL_INT( pdPASS, xIsTestFinished );
 }
 /*-----------------------------------------------------------*/
 
@@ -174,7 +151,7 @@ void setUp( void )
         xTaskCreationResult = xTaskCreate( prvEverRunningTask,
                                            "EverRun",
                                            configMINIMAL_STACK_SIZE * 2,
-                                           NULL,
+                                           ( void * ) i,
                                            configMAX_PRIORITIES - 1 - i,
                                            &( xTaskHanldes[ i ] ) );
 
@@ -200,7 +177,7 @@ void tearDown( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief A start entry for test runner to run FR02.
+ * @brief A start entry for test runner to run highest priority test.
  */
 void vRunScheduleHighestPriorityTest( void )
 {

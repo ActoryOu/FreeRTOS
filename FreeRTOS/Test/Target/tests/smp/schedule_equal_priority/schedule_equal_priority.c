@@ -73,17 +73,6 @@ void Test_ScheduleHighestPirority( void );
  * @brief Function that implements a never blocking FreeRTOS task.
  */
 static void prvEverRunningTask( void * pvParameters );
-
-/**
- * @brief Function that returns which index does the xCurrentTaskHandle match.
- *        0 for T0, 1 for T1, -1 for not match.
- */
-static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
-
-/**
- * @brief Check if all tasks have run or not.
- */
-static BaseType_t xAreAllTasksRun( void );
 /*-----------------------------------------------------------*/
 
 /**
@@ -95,41 +84,6 @@ static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES + 1 ];
  * @brief Handles of the tasks created in this test.
  */
 static BaseType_t xTaskRun[ configNUMBER_OF_CORES + 1 ] = { pdFALSE };
-/*-----------------------------------------------------------*/
-
-static BaseType_t xAreAllTasksRun( void )
-{
-    int i;
-    BaseType_t xIsAllTasksRun = pdTRUE;
-
-    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
-    {
-        if( xTaskRun[ i ] != pdTRUE )
-        {
-            xIsAllTasksRun = pdFALSE;
-        }
-    }
-
-    return xIsAllTasksRun;
-}
-/*-----------------------------------------------------------*/
-
-static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
-{
-    int i = 0;
-    int matchIdx = -1;
-
-    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
-    {
-        if( xCurrentTaskHandle == xTaskHanldes[ i ] )
-        {
-            matchIdx = i;
-            break;
-        }
-    }
-
-    return matchIdx;
-}
 /*-----------------------------------------------------------*/
 
 static void prvEverRunningTask( void * pvParameters )
@@ -149,20 +103,16 @@ static void prvEverRunningTask( void * pvParameters )
 
 void Test_ScheduleEqualPriority( void )
 {
-    TickType_t xStartTick = xTaskGetTickCount();
+    int i;
 
-    /* Wait other tasks. */
-    while( xAreAllTasksRun() == pdFALSE )
+    /* TEST_TIMEOUT_MS is long enough to run each task. */
+    vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
+
+    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
-        vTaskDelay( pdMS_TO_TICKS( 10 ) );
-
-        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
-        {
-            break;
-        }
+        /* After timeout, all tasks should be scheduled at least once and set the flag to pdTRUE. */
+        TEST_ASSERT_EQUAL( pdTRUE, xTaskRun[ i ] );
     }
-
-    TEST_ASSERT_TRUE( xAreAllTasksRun() );
 }
 /*-----------------------------------------------------------*/
 

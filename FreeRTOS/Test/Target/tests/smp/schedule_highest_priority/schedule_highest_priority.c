@@ -71,7 +71,7 @@ static void prvEverRunningTask( void * pvParameters );
 /**
  * @brief Handle of the testRunner task.
  */
-static TaskHandle_t xTestRunnerTaskHanlde;
+static TaskHandle_t xTestRunnerTaskHandle;
 
 /**
  * @brief Handles of the tasks created in this test.
@@ -95,24 +95,18 @@ static void prvEverRunningTask( void * pvParameters )
          * priority tasks is of running state. */
         if( eRunning != xTaskState )
         {
-            while( xTestRunnerTaskHanlde == NULL )
-            {
-                /* Waiting testRunner to update xTestRunnerTaskHanlde. */
-                vTaskDelay( pdMS_TO_TICKS( 10 ) );
-            }
-
             /* Generate error code corresponds to task index.
              * Task 0: 0x10
              * Task 1: 0x11
              * ... */
-            ( void ) xTaskNotify( xTestRunnerTaskHanlde, ( uint32_t ) ( currentTaskIdx + 0x10 ), eSetValueWithoutOverwrite );
+            ( void ) xTaskNotify( xTestRunnerTaskHandle, ( uint32_t ) ( currentTaskIdx + 0x10 ), eSetValueWithoutOverwrite );
         }
     }
 
     /* If the task is the last task, then we finish the check because all tasks are checked. */
     if( currentTaskIdx == ( configNUMBER_OF_CORES - 1 ) )
     {
-        ( void ) xTaskNotify( xTestRunnerTaskHanlde, ( uint32_t ) ( pdPASS ), eSetValueWithoutOverwrite );
+        ( void ) xTaskNotify( xTestRunnerTaskHandle, ( uint32_t ) ( pdPASS ), eSetValueWithoutOverwrite );
     }
 
     for( ; ; )
@@ -126,19 +120,12 @@ static void prvEverRunningTask( void * pvParameters )
 void Test_ScheduleHighestPirority( void )
 {
     uint32_t ulNotifiedValue;
-    TickType_t xStartTick = xTaskGetTickCount();
+    BaseType_t xReturn;
 
-    xTestRunnerTaskHanlde = xTaskGetCurrentTaskHandle();
+    xReturn = xTaskNotifyWait( 0x00, ULONG_MAX, &ulNotifiedValue, pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
 
-    if( xTaskNotifyWait( 0x00, ULONG_MAX, &ulNotifiedValue, pdMS_TO_TICKS( TEST_TIMEOUT_MS ) ) != pdTRUE )
-    {
-        /* Timeout, test fail. */
-        TEST_ASSERT_TRUE( pdFALSE );
-    }
-    else
-    {
-        TEST_ASSERT_EQUAL_INT( pdPASS, ulNotifiedValue );
-    }
+    TEST_ASSERT_EQUAL( pdTRUE, xReturn );
+    TEST_ASSERT_EQUAL_INT( pdPASS, ulNotifiedValue );
 }
 /*-----------------------------------------------------------*/
 
@@ -184,6 +171,8 @@ void tearDown( void )
  */
 void vRunScheduleHighestPriorityTest( void )
 {
+    xTestRunnerTaskHandle = xTaskGetCurrentTaskHandle();
+
     UNITY_BEGIN();
 
     RUN_TEST( Test_ScheduleHighestPirority );

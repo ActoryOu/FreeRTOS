@@ -92,10 +92,13 @@ static void prvEverRunningTask( void * pvParameters )
         /* Tasks created in this test are of descending priority order. For example,
          * priority of T0 is higher than priority of T1. A lower priority task is able
          * to run only when the higher priority tasks are running. Verify that higher
-         * priority tasks is of running state. */
+         * priority tasks are of running state. */
         if( eRunning != xTaskState )
         {
-            /* Generate error code corresponds to task index.
+            /* No matter what the return value is, there must be a value in the queue
+             * for test runner to get. So we ignore the return value here.
+             *
+             * Generate error code corresponds to task index.
              * Task 0: 0x10
              * Task 1: 0x11
              * ... */
@@ -106,6 +109,8 @@ static void prvEverRunningTask( void * pvParameters )
     /* If the task is the last task, then we finish the check because all tasks are checked. */
     if( currentTaskIdx == ( configNUMBER_OF_CORES - 1 ) )
     {
+        /* No matter what the return value is, there must be a value in the queue
+         * for test runner to get. So we ignore the return value here. */
         ( void ) xTaskNotify( xTestRunnerTaskHandle, ( uint32_t ) ( pdPASS ), eSetValueWithoutOverwrite );
     }
 
@@ -124,7 +129,9 @@ void Test_ScheduleHighestPirority( void )
 
     xReturn = xTaskNotifyWait( 0x00, ULONG_MAX, &ulNotifiedValue, pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
 
+    /* Test runner thread is notified within TEST_TIMEOUT_MS. */
     TEST_ASSERT_EQUAL( pdTRUE, xReturn );
+    /* The notified value indicates that no error occurred during the test. */
     TEST_ASSERT_EQUAL_INT( pdPASS, ulNotifiedValue );
 }
 /*-----------------------------------------------------------*/

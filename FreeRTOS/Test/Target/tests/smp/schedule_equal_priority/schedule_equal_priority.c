@@ -30,11 +30,10 @@
  *
  * Procedure:
  *   - Create ( num of cores + 1 ) tasks ( T0~Tn ). Priority T0 = T1 = ... = Tn-1 = Tn.
- *   - All three tasks are running in busy loop
+ *   - All tasks are running in busy loop.
  * Expected:
- *   - All three tasks get a chance to run. The test doesn't currently strictly
- *     validate the round-robin nature of the scheduler as other system tasks,
- *     possibly target specific come and go complicating on-target validation.
+ *   - Equal priority tasks are scheduled in a round robin fashion when configUSE_TIME_SLICING
+ *     is set to 1. Verify that all the created equal priority tasks get chance to run.
  */
 
 /* Kernel includes. */
@@ -56,7 +55,7 @@
 #endif /* if configNUMBER_OF_CORES != 2 */
 
 #if ( configUSE_TIME_SLICING != 1 )
-    #error test_config.h must be included at the end of FreeRTOSConfig.h.
+    #error configUSE_TIME_SLICING must be enabled by including test_config.h in FreeRTOSConfig.h.
 #endif /* if configUSE_TIME_SLICING != 1 */
 
 #if ( configMAX_PRIORITIES <= 2 )

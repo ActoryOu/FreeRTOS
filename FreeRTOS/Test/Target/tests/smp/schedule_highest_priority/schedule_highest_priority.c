@@ -34,6 +34,9 @@
  *   - When a task runs, all tasks have higher priority are running.
  */
 
+/* Standard includes. */
+#include <stdint.h>
+
 /* Kernel includes. */
 
 #include "FreeRTOS.h" /* Must come first. */
@@ -77,12 +80,17 @@ static TaskHandle_t xTestRunnerTaskHandle;
  * @brief Handles of the tasks created in this test.
  */
 static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
+
+/**
+ * @brief Indexes of the tasks created in this test.
+ */
+static uint32_t xTaskIndexes[ configNUMBER_OF_CORES ];
 /*-----------------------------------------------------------*/
 
 static void prvEverRunningTask( void * pvParameters )
 {
-    int i = 0;
-    int currentTaskIdx = ( int ) pvParameters;
+    uint32_t i = 0;
+    uint32_t currentTaskIdx = *( ( int * ) pvParameters );
     eTaskState xTaskState;
 
     for( i = 0; i < currentTaskIdx; i++ )
@@ -145,12 +153,13 @@ void setUp( void )
     /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
+        xTaskIndexes[ i ] = i;
         xTaskCreationResult = xTaskCreate( prvEverRunningTask,
                                            "EverRun",
                                            configMINIMAL_STACK_SIZE * 2,
-                                           ( void * ) i,
+                                           &xTaskIndexes[ i ],
                                            configMAX_PRIORITIES - 1 - i,
-                                           &( xTaskHanldes[ i ] ) );
+                                           &xTaskHanldes[ i ] );
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
     }

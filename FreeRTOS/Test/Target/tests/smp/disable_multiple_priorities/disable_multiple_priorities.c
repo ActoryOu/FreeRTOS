@@ -82,12 +82,6 @@ void Test_DisableMultiplePriorities( void );
  * @brief Function that checks if itself is the only task runs.
  */
 static void prvCheckRunningTask( void * pvParameters );
-
-/**
- * @brief Function that returns which index does the xCurrentTaskHandle match.
- *        0 for T0, 1 for T1, -1 for not match.
- */
-static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
 /*-----------------------------------------------------------*/
 
 /**

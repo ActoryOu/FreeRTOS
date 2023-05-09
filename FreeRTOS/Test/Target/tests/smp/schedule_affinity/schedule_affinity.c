@@ -29,14 +29,19 @@
  * @brief The scheduler shall not schedule a task that is pinned to a specific core on any other core.
  *
  * Procedure:
- *   - Create ( num of cores ) tasks ( T0~Tn-1 ).
+ *   - Create 2 * ( num of cores ) tasks ( T0, ..., Tn-1, Tn, ..., T2n-1 ).
  *   - Pin T0 to core 0, T1 to core 1, and so on.
- *   - Each task will iterate 25 times, with a 10ms yielding delay between each
- *     test iteration. The test will confirm it is running on the core it was pinned
- *     to.
+ *   - Pin Tn to core 0, Tn+1 to core 1, and so on. Tx and Tx+n will be pinned to the same core.
+ *   - Verify the following conditions:
+ *     - Tx+n is not running when Tx is running.
+ *     - Tx is not running when Tx+n is running.
+ *     - Both Tx and Tx+n can only run on core x.
  * Expected:
  *   - All tasks will only run on the cores that they were pinned to.
  */
+
+/* Standard includes. */
+#include <stdint.h>
 
 /* Kernel includes. */
 #include "FreeRTOS.h" /* Must come first. */
@@ -48,15 +53,15 @@
 /**
  * @brief Timeout value to stop test.
  */
-#define TEST_TIMEOUT_MS    ( 10000 )
+#define TEST_TIMEOUT_MS    ( 1000 )
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
 #endif /* if configNUMBER_OF_CORES != 2 */
 
-#if ( configMAX_PRIORITIES <= 2 )
-    #error configMAX_PRIORITIES must be larger than 2 to avoid scheduling idle tasks unexpectly.
+#if ( configMAX_PRIORITIES <= ( configNUMBER_OF_CORES + 1 ) )
+    #error configMAX_PRIORITIES must be larger than ( configNUMBER_OF_CORES + 1 ) to avoid scheduling idle tasks unexpectly.
 #endif /* if ( configMAX_PRIORITIES <= 2 ) */
 /*-----------------------------------------------------------*/
 
@@ -69,95 +74,82 @@ void Test_ScheduleAffinity( void );
  * @brief Function that checks if it's pinned to correct core.
  */
 static void prvTaskCheckPinCore( void * pvParameters );
-
-/**
- * @brief Function that returns which index does the xCurrentTaskHandle match.
- *        0 for T0, 1 for T1, -1 for not match.
- */
-static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
 /*-----------------------------------------------------------*/
 
 /**
  * @brief Handles of the tasks created in this test.
  */
-static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
+static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES * 2 ];
+
+/**
+ * @brief Indexes of the tasks created in this test.
+ */
+static uint32_t xTaskIndexes[ configNUMBER_OF_CORES * 2 ];
 
 /**
  * @brief Flags to indicate if task T0~Tn-1 finish or not.
  */
-static BaseType_t xHasTaskFinished[ configNUMBER_OF_CORES ] = { pdFALSE };
-/*-----------------------------------------------------------*/
-
-static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
-{
-    int i = 0;
-    int matchIdx = -1;
-
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
-    {
-        if( xCurrentTaskHandle == xTaskHanldes[ i ] )
-        {
-            matchIdx = i;
-            break;
-        }
-    }
-
-    return matchIdx;
-}
+static BaseType_t xTaskTestResults[ configNUMBER_OF_CORES * 2 ] = { pdFAIL };
 /*-----------------------------------------------------------*/
 
 static void prvTaskCheckPinCore( void * pvParameters )
 {
-    int currentTaskIdx = -1;
-    uint32_t ulIter;
+    uint32_t currentTaskIdx = *( ( int * ) pvParameters );
+    uint32_t pinToSameCoreTaskIdx;
+    eTaskState taskState;
+    BaseType_t testResult = pdPASS;
     BaseType_t xCore;
 
-    ( void ) pvParameters;
-
-    currentTaskIdx = prvFindTaskIdx( xTaskGetCurrentTaskHandle() );
-    TEST_ASSERT_TRUE( currentTaskIdx >= 0 && currentTaskIdx < configNUMBER_OF_CORES );
-
-    for( ulIter = 1; ulIter < 25; ulIter++ )
+    /* Find out the the task index which pin to the same core. */
+    if( currentTaskIdx >= configNUMBER_OF_CORES )
     {
-        vTaskDelay( pdMS_TO_TICKS( 10 ) );
-        xCore = portGET_CORE_ID();
-
-        if( xCore != currentTaskIdx )
-        {
-            TEST_ASSERT_EQUAL_INT( xCore, currentTaskIdx );
-            break;
-        }
+        pinToSameCoreTaskIdx = currentTaskIdx - configNUMBER_OF_CORES;
+        xCore = pinToSameCoreTaskIdx;
+    }
+    else
+    {
+        pinToSameCoreTaskIdx = currentTaskIdx + configNUMBER_OF_CORES;
+        xCore = currentTaskIdx;
     }
 
-    xHasTaskFinished[ currentTaskIdx ] = pdTRUE;
-
-    /* idle the task */
-    for( ; ; )
+    /* Verify the current running task state. */
+    taskState = eTaskGetState( xTaskHanldes[ currentTaskIdx ] );
+    if( taskState != eRunning )
     {
-        vTaskDelay( pdMS_TO_TICKS( 100 ) );
+        testResult = pdFAIL;
     }
+
+    /* Verify the core index is the same as configured. */
+    if( xCore != portGET_CORE_ID() )
+    {
+        testResult = pdFAIL;
+    }
+
+    /* The other task pin to the same core should not of running state. */
+    taskState = eTaskGetState( xTaskHanldes[ pinToSameCoreTaskIdx ] );
+    if( taskState == eRunning )
+    {
+       testResult = pdFAIL;
+    }
+
+    xTaskTestResults[ currentTaskIdx ] = testResult;
+
+    /* Suspend the test task. */
+    vTaskSuspend( NULL );
 }
 /*-----------------------------------------------------------*/
 
 void Test_ScheduleAffinity( void )
 {
-    TickType_t xStartTick = xTaskGetTickCount();
-    int i = 0;
+    uint32_t i = 0;
 
-    /* Wait other tasks. */
-    for( ; ; )
+    /* Wait for test tasks. */
+    vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
+
+    /* Verify the test result. */
+    for( i = 0; i < ( configNUMBER_OF_CORES * 2 ); i++ )
     {
-        vTaskDelay( pdMS_TO_TICKS( 100 ) );
-
-        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
-        {
-            break;
-        }
-    }
-
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
-    {
-        TEST_ASSERT_TRUE( xHasTaskFinished[ i ] == pdTRUE );
+        TEST_ASSERT_TRUE( xTaskTestResults[ i ] == pdPASS );
     }
 }
 /*-----------------------------------------------------------*/
@@ -165,19 +157,20 @@ void Test_ScheduleAffinity( void )
 /* Runs before every test, put init calls here. */
 void setUp( void )
 {
-    int i;
+    uint32_t i;
     BaseType_t xTaskCreationResult;
 
-    /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    /* Create configNUMBER_OF_CORES low priority tasks. */
+    for( i = 0; i < ( configNUMBER_OF_CORES * 2 ) ; i++ )
     {
+        xTaskIndexes[ i ] = i;
         xTaskCreationResult = xTaskCreateAffinitySet( prvTaskCheckPinCore,
                                                       "CheckPinCore",
                                                       configMINIMAL_STACK_SIZE,
-                                                      NULL,
-                                                      configMAX_PRIORITIES - 2,
-                                                      ( 1U << i ),
-                                                      &( xTaskHanldes[ i ] ) );
+                                                      &xTaskIndexes[ i ],
+                                                      configMAX_PRIORITIES - 2 - ( i % configNUMBER_OF_CORES ),
+                                                      ( 1U << ( i % configNUMBER_OF_CORES ) ),
+                                                      &xTaskHanldes[ i ] );
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
     }
@@ -187,10 +180,10 @@ void setUp( void )
 /* Runs after every test, put clean-up calls here. */
 void tearDown( void )
 {
-    int i;
+    uint32_t i;
 
     /* Delete all the tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    for( i = 0; i < ( configNUMBER_OF_CORES * 2 ); i++ )
     {
         if( xTaskHanldes[ i ] != NULL )
         {
@@ -201,7 +194,7 @@ void tearDown( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief A start entry for test runner to run FR05.
+ * @brief A start entry for test runner to run scheduler affinity test.
  */
 void vRunScheduleAffinityTest( void )
 {

@@ -100,7 +100,7 @@ static void prvTaskCheckPinCore( void * pvParameters )
     BaseType_t testResult = pdPASS;
     BaseType_t xCore;
 
-    /* Find out the the task index which pin to the same core. */
+    /* Find out the task index which pin to the same core. */
     if( currentTaskIdx >= configNUMBER_OF_CORES )
     {
         pinToSameCoreTaskIdx = currentTaskIdx - configNUMBER_OF_CORES;

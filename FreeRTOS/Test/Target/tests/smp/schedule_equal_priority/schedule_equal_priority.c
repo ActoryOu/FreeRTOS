@@ -36,6 +36,9 @@
  *     is set to 1. Verify that all the created equal priority tasks get chance to run.
  */
 
+/* Standard includes. */
+#include <stdint.h>
+
 /* Kernel includes. */
 
 #include "FreeRTOS.h" /* Must come first. */
@@ -47,7 +50,7 @@
 /**
  * @brief Timeout value to stop test.
  */
-#define TEST_TIMEOUT_MS    ( 10000 )
+#define TEST_TIMEOUT_MS    ( 1000 )
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
@@ -80,6 +83,11 @@ static void prvEverRunningTask( void * pvParameters );
 static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES + 1 ];
 
 /**
+ * @brief Indexes of the tasks created in this test.
+ */
+static uint32_t xTaskIndexes[ configNUMBER_OF_CORES + 1 ];
+
+/**
  * @brief Handles of the tasks created in this test.
  */
 static BaseType_t xTaskRun[ configNUMBER_OF_CORES + 1 ] = { pdFALSE };
@@ -87,7 +95,7 @@ static BaseType_t xTaskRun[ configNUMBER_OF_CORES + 1 ] = { pdFALSE };
 
 static void prvEverRunningTask( void * pvParameters )
 {
-    int currentTaskIdx = ( int ) pvParameters;
+    uint32_t currentTaskIdx = *( ( int * ) pvParameters );
 
     /* Set the flag for testRunner to check whether all tasks have run. */
     xTaskRun[ currentTaskIdx ] = pdTRUE;
@@ -102,7 +110,7 @@ static void prvEverRunningTask( void * pvParameters )
 
 void Test_ScheduleEqualPriority( void )
 {
-    int i;
+    uint32_t i;
 
     /* TEST_TIMEOUT_MS is long enough to run each task. */
     vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
@@ -118,18 +126,19 @@ void Test_ScheduleEqualPriority( void )
 /* Runs before every test, put init calls here. */
 void setUp( void )
 {
-    int i;
+    uint32_t i;
     BaseType_t xTaskCreationResult;
 
     /* Create configNUMBER_OF_CORES + 1 low priority tasks. */
     for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
+        xTaskIndexes[ i ] = i;
         xTaskCreationResult = xTaskCreate( prvEverRunningTask,
                                            "EverRun",
                                            configMINIMAL_STACK_SIZE,
-                                           ( void * ) i,
+                                           &xTaskIndexes[ i ],
                                            configMAX_PRIORITIES - 2,
-                                           &( xTaskHanldes[ i ] ) );
+                                           &xTaskHanldes[ i ] );
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
     }
@@ -139,7 +148,7 @@ void setUp( void )
 /* Runs after every test, put clean-up calls here. */
 void tearDown( void )
 {
-    int i;
+    uint32_t i;
 
     /* Delete all the tasks. */
     for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
@@ -153,7 +162,7 @@ void tearDown( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief A start entry for test runner to run FR03.
+ * @brief A start entry for test runner to run schedule equal priority test.
  */
 void vRunScheduleEqualPriorityTest( void )
 {

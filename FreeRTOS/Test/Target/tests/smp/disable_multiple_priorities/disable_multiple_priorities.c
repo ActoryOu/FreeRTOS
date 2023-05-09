@@ -30,13 +30,18 @@
  *        lower priority task and a higher priority task simultaneously.
  *
  * Procedure:
- *   - Create ( num of cores ) tasks ( T0~Tn-1 ). Priority T0 > T1 > ... > Tn-2 > Tn-1.
- *   - All tasks keep looping in below steps:
- *     - Check if only task itself run.
- *     - Delay 100ms for other tasks to run.
+ *   - Create ( num of cores ) test tasks ( T0~Tn-1 ). Priority T0 > T1 > ... > Tn-2 > Tn-1.
+ *   - Verify the following conditions in the test tasks:
+ *     - Verfy the task is of eSuspend state if task index smaller the than current running task index.
+ *     - Verfy the task is of eRunning state if task index is the current running task index.
+ *     - Verfy the task is of eReady state if task index is greater than the current running task index.
+ *   - Suspend the test tasks.
  * Expected:
- *   - Only one task runs at the same time for 5 seconds.
+ *   - Only one test task runs at the same time since they are of different priorities.
  */
+
+/* Standard includes. */
+#include <stdint.h>
 
 /* Kernel includes. */
 #include "FreeRTOS.h" /* Must come first. */
@@ -48,7 +53,7 @@
 /**
  * @brief Timeout value to stop test.
  */
-#define TEST_TIMEOUT_MS    ( 5000 )
+#define TEST_TIMEOUT_MS    ( 1000 )
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
@@ -56,14 +61,14 @@
 #endif /* if configNUMBER_OF_CORES != 2 */
 
 #if ( configRUN_MULTIPLE_PRIORITIES != 0 )
-    #error Need to include testConfig.h in FreeRTOSConfig.h
+    #error configRUN_MULTIPLE_PRIORITIES must be disabled by including test_config.h in FreeRTOSConfig.h.
 #endif /* if configRUN_MULTIPLE_PRIORITIES != 0 */
 
 #if ( configUSE_CORE_AFFINITY != 0 )
-    #error Need to include testConfig.h in FreeRTOSConfig.h
+    #error configUSE_CORE_AFFINITY must be disabled by including test_config.h in FreeRTOSConfig.h.
 #endif /* if configUSE_CORE_AFFINITY != 0 */
 
-#if ( configMAX_PRIORITIES <= configNUMBER_OF_CORES )
+#if ( configMAX_PRIORITIES <= ( configNUMBER_OF_CORES + 1 ) )
     #error This test creates tasks with different priority, requires configMAX_PRIORITIES to be larger than configNUMBER_OF_CORES.
 #endif /* if configNUMBER_OF_CORES != 2 */
 /*-----------------------------------------------------------*/
@@ -91,86 +96,85 @@ static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle );
 static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
 
 /**
- * @brief Flags to indicate if task T0~Tn-1 run or not.
+ * @brief Indexes of the tasks created in this test.
  */
-static BaseType_t xHasTaskRun[ configNUMBER_OF_CORES ] = { pdFALSE };
-/*-----------------------------------------------------------*/
+static uint32_t xTaskIndexes[ configNUMBER_OF_CORES ];
 
-static int prvFindTaskIdx( TaskHandle_t xCurrentTaskHandle )
-{
-    int i = 0;
-    int matchIdx = -1;
-
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
-    {
-        if( xCurrentTaskHandle == xTaskHanldes[ i ] )
-        {
-            matchIdx = i;
-            break;
-        }
-    }
-
-    return matchIdx;
-}
+/**
+ * @brief Flags to indicate if task T0~Tn-1 test result.
+ */
+static BaseType_t xTaskTestResults[ configNUMBER_OF_CORES ] = { pdFAIL };
 /*-----------------------------------------------------------*/
 
 static void prvCheckRunningTask( void * pvParameters )
 {
-    int i = 0;
-    int currentTaskIdx = prvFindTaskIdx( xTaskGetCurrentTaskHandle() );
+    uint32_t i = 0;
+    uint32_t currentTaskIdx = *( ( int * ) pvParameters );
     eTaskState taskState;
+    BaseType_t xTestResult = pdPASS;
 
-    /* Silence warnings about unused parameters. */
-    ( void ) pvParameters;
-
-    TEST_ASSERT_TRUE( currentTaskIdx >= 0 && currentTaskIdx < configNUMBER_OF_CORES );
-    xHasTaskRun[ currentTaskIdx ] = pdTRUE;
-
-    for( ; ; )
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
-        for( i = 0; i < configNUMBER_OF_CORES; i++ )
+        /* All the test tasks are created by test runner thread. The test runs with
+         * multiple priorities disabled. Therefore, xTaskHandles should not be NULL.
+         * Return pdFAIL in xTaskTestResults to indicate test fail. */
+        if( xTaskHanldes[ i ] == NULL )
         {
-            if( !xTaskHanldes[ i ] )
-            {
-                break;
-            }
-
+            xTestResult = pdFAIL;
+        }
+        else
+        {
             taskState = eTaskGetState( xTaskHanldes[ i ] );
 
-            if( i == currentTaskIdx )
+            if( i > currentTaskIdx )
             {
-                TEST_ASSERT_EQUAL_INT( eRunning, taskState );
+                /* Task index greater than current task should be of ready state. */
+                if( taskState != eReady )
+                {
+                    xTestResult = pdFAIL;
+                }
+            }
+            else if( i == currentTaskIdx )
+            {
+                /* Current task is of running state. */
+                if( taskState != eRunning )
+                {
+                    xTestResult = pdFAIL;
+                }
             }
             else
             {
-                TEST_ASSERT_NOT_EQUAL_INT( eRunning, taskState );
+                /* Task index smaller than current task should be of suspended state. */
+                if( taskState != eSuspended )
+                {
+                    xTestResult = pdFAIL;
+                }
             }
         }
 
-        vTaskDelay( pdMS_TO_TICKS( 100 ) );
+        if( xTestResult != pdPASS )
+        {
+            break;
+        }
     }
+    xTaskTestResults[ currentTaskIdx ] = xTestResult;
+
+    /* Suspend the test task itself. */
+    vTaskSuspend( NULL );
 }
 /*-----------------------------------------------------------*/
 
 void Test_DisableMultiplePriorities( void )
 {
-    TickType_t xStartTick = xTaskGetTickCount();
-    int i = 0;
+    uint32_t i = 0;
 
-    /* Wait other tasks. */
-    for( ; ; )
-    {
-        vTaskDelay( pdMS_TO_TICKS( 100 ) );
+    /* Waiting for all the test tasks. */
+    vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
-        {
-            break;
-        }
-    }
-
+    /* Verify all the test result. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
-        TEST_ASSERT_TRUE( xHasTaskRun[ i ] == pdTRUE );
+        TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskTestResults[ i ], "Task test result is pdFAIL" );
     }
 }
 /*-----------------------------------------------------------*/
@@ -178,18 +182,19 @@ void Test_DisableMultiplePriorities( void )
 /* Runs before every test, put init calls here. */
 void setUp( void )
 {
-    int i;
+    uint32_t i;
     BaseType_t xTaskCreationResult;
 
-    /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
+    /* Create configNUMBER_OF_CORES low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
+        xTaskIndexes[ i ] = i;
         xTaskCreationResult = xTaskCreate( prvCheckRunningTask,
                                            "CheckRunning",
                                            configMINIMAL_STACK_SIZE * 2,
-                                           NULL,
-                                           configMAX_PRIORITIES - 1 - i,
-                                           &( xTaskHanldes[ i ] ) );
+                                           &xTaskIndexes[ i ],
+                                           configMAX_PRIORITIES - 2 - i,
+                                           &xTaskHanldes[ i ] );
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
     }
@@ -199,7 +204,7 @@ void setUp( void )
 /* Runs after every test, put clean-up calls here. */
 void tearDown( void )
 {
-    int i;
+    uint32_t i;
 
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
@@ -213,7 +218,7 @@ void tearDown( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief A start entry for test runner to run FR04.
+ * @brief A start entry for test runner to run disable multiple priorties test.
  */
 void vRunDisableMultiplePrioritiesTest( void )
 {

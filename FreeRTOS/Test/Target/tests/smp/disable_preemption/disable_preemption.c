@@ -38,6 +38,9 @@
  *     has preemption disabled.
  */
 
+/* Standard includes. */
+#include <stdint.h>
+
 /* Kernel includes. */
 #include "FreeRTOS.h" /* Must come first. */
 #include "task.h"     /* RTOS task related API prototypes. */
@@ -48,12 +51,7 @@
 /**
  * @brief Timeout value to stop test.
  */
-#define TEST_TIMEOUT_MS         ( 10000 )
-
-/**
- * @brief Loop value for T0 with preemption disabled.
- */
-#define TEST_T0_BUSY_TIME_MS    ( 3000 )
+#define TEST_TIMEOUT_MS         ( 1000 )
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
@@ -61,12 +59,12 @@
 #endif /* if configNUMBER_OF_CORES != 2 */
 
 #if ( configUSE_TASK_PREEMPTION_DISABLE != 1 )
-    #error Need to include testConfig.h in FreeRTOSConfig.h
+    #error configUSE_TASK_PREEMPTION_DISABLE must be enabled by including test_config.h in FreeRTOSConfig.h.
 #endif /* if configUSE_TASK_PREEMPTION_DISABLE != 1 */
 
-#if ( configMAX_PRIORITIES <= 3 )
-    #error configMAX_PRIORITIES must be larger than 3 to avoid scheduling idle tasks unexpectly.
-#endif /* if ( configMAX_PRIORITIES <= 3 ) */
+#if ( configMAX_PRIORITIES <= ( configNUMBER_OF_CORES + 2 ) )
+    #error configMAX_PRIORITIES must be larger than ( configNUMBER_OF_CORES + 2 ) to avoid scheduling idle tasks unexpectly.
+#endif /* if ( configMAX_PRIORITIES <= ( configNUMBER_OF_CORES + 2 ) ) */
 /*-----------------------------------------------------------*/
 
 /**
@@ -75,14 +73,9 @@
 void Test_DisablePreemption( void );
 
 /**
- * @brief Function that implements a never blocking FreeRTOS task.
+ * @brief Disable preemption test task.
  */
-static void prvEverRunningTask( void * pvParameters );
-
-/**
- * @brief Task for T0 to busy loop with preemption disabled.
- */
-static void prvDisablePreemptionTask( void * pvParameters );
+static void prvTestPreemptionDisableTask( void * pvParameters );
 /*-----------------------------------------------------------*/
 
 /**
@@ -91,120 +84,103 @@ static void prvDisablePreemptionTask( void * pvParameters );
 static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES + 1 ];
 
 /**
- * @brief Flag to indicate if task T0 disables preemption or not.
+ * @brief Indexes of the tasks created in this test.
  */
-static BaseType_t xIsTaskT0PreemptDisabled = { pdFALSE };
+static uint32_t xTaskIndexes[ configNUMBER_OF_CORES + 1 ];
 
 /**
- * @brief Flag to indicate if task T0 finish or not.
+ * @brief Flags to indicate if test task result.
  */
-static BaseType_t xIsTaskT0Finished = { pdFALSE };
+static BaseType_t xTaskTestResult = pdFAIL;
 /*-----------------------------------------------------------*/
 
-static void prvEverRunningTask( void * pvParameters )
+static void prvTestPreemptionDisableTask( void * pvParameters )
 {
-    eTaskState xTaskState;
+    uint32_t currentTaskIdx = *( ( int * ) pvParameters );
+    uint32_t taskIndex;
+    eTaskState taskState;
+    BaseType_t highPriorityTasksSuspended = pdFALSE;
 
-    /* Silence warnings about unused parameters. */
-    ( void ) pvParameters;
-
-    for( ; ; )
+    if( currentTaskIdx == configNUMBER_OF_CORES )
     {
-        /* Check xIsTaskT0PreemptDisabled before getting task's state to make sure task disabled preemption.
-         * Check it again after getting state to make sure the preemption is still disabled. */
-        if( xTaskHanldes[ 0 ] && ( xIsTaskT0PreemptDisabled == pdTRUE ) )
+        /* Wait for all other higher priority tasks suspend themselves. */
+        while( highPriorityTasksSuspended == pdFALSE )
         {
-            xTaskState = eTaskGetState( xTaskHanldes[ 0 ] );
-
-            if( xIsTaskT0PreemptDisabled == pdTRUE )
+            highPriorityTasksSuspended = pdTRUE;
+            for( taskIndex = 0; taskIndex < configNUMBER_OF_CORES; taskIndex++ )
             {
-                TEST_ASSERT_EQUAL_INT( xTaskState, eRunning );
+                taskState = eTaskGetState( xTaskHanldes[ taskIndex ] );
+                if( taskState != eSuspended )
+                {
+                    highPriorityTasksSuspended = pdFALSE;
+                    break;
+                }
             }
         }
 
-        /* Always running, put asm here to avoid optimization by compiler. */
-        __asm volatile ( "nop" );
-    }
-}
-/*-----------------------------------------------------------*/
+        /* Disable preemption and wake up all the other higher priority tasks.
+         * There are core number plus one tasks. If preemption is not disabled,
+         * the scheduler will choose higher priority task to run. */
+        vTaskDisablePreemption( NULL );
 
-static void prvDisablePreemptionTask( void * pvParameters )
-{
-    TickType_t xT0StartTick = xTaskGetTickCount();
-
-    /* wait with preemption disabled */
-    vTaskPreemptionDisable( NULL );
-    xIsTaskT0PreemptDisabled = pdTRUE;
-
-    vTaskPrioritySet( NULL, configMAX_PRIORITIES - 3 );
-
-    for( ; ; )
-    {
-        if( ( xTaskGetTickCount() - xT0StartTick ) >= pdMS_TO_TICKS( TEST_T0_BUSY_TIME_MS ) )
+        for( taskIndex = 0; taskIndex < configNUMBER_OF_CORES; taskIndex++ )
         {
-            break;
+            vTaskResume( xTaskHanldes[ taskIndex ] );
         }
 
-        /* Always running, put asm here to avoid optimization by compiler. */
-        __asm volatile ( "nop" );
+        /* If preemption is not disabled, this task will be switched out due to
+         * lowest priority. The following line won't be run. */
+        xTaskTestResult = pdPASS;
+    }
+    else
+    {
+        vTaskSuspend( NULL );
     }
 
-    xIsTaskT0PreemptDisabled = pdFALSE;
-    xIsTaskT0Finished = pdTRUE;
-
-    /* After enabling preemption, T0 will never has chance to run anymore. */
-    vTaskPreemptionEnable( NULL );
-
+    /* Busy looping here to occupy this core. */
     for( ; ; )
     {
-        vTaskDelay( pdMS_TO_TICKS( 10 ) );
+        /* Always running, put asm here to avoid optimization by compiler. */
+        __asm volatile ( "nop" );
     }
 }
 /*-----------------------------------------------------------*/
 
 void Test_DisablePreemption( void )
 {
-    TickType_t xStartTick = xTaskGetTickCount();
+    eTaskState taskState;
 
-    /* Wait other tasks. */
-    while( xIsTaskT0Finished == pdFALSE )
-    {
-        vTaskDelay( pdMS_TO_TICKS( 100 ) );
+    /* TEST_TIMEOUT_MS is long enough to run this task. */
+    vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
 
-        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
-        {
-            break;
-        }
-    }
+    /* Verify the lowest priority task runs after resuming all test tasks. */
+    TEST_ASSERT_EQUAL( pdPASS, xTaskTestResult );
 
-    TEST_ASSERT_TRUE( xIsTaskT0Finished == pdTRUE );
+    /* Enable preemption of the lowest priority task. */
+    vTaskDisablePreemption( xTaskHanldes[ configNUMBER_OF_CORES ] );
+
+    /* Verify the task is of ready state now. */
+    taskState = eTaskGetState( xTaskHanldes[ configNUMBER_OF_CORES ] );
+    TEST_ASSERT_EQUAL( eReady, taskState );
 }
 /*-----------------------------------------------------------*/
 
 /* Runs before every test, put init calls here. */
 void setUp( void )
 {
-    int i;
+    uint32_t i;
     BaseType_t xTaskCreationResult;
 
-    xTaskCreationResult = xTaskCreate( prvDisablePreemptionTask,
-                                       "DP",
-                                       configMINIMAL_STACK_SIZE * 2,
-                                       NULL,
-                                       configMAX_PRIORITIES - 2,
-                                       &( xTaskHanldes[ 0 ] ) );
-
-    TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
-
     /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
-    for( i = 1; i < ( configNUMBER_OF_CORES + 1 ); i++ )
+    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
-        xTaskCreationResult = xTaskCreate( prvEverRunningTask,
-                                           "EverRunning",
+        xTaskIndexes[ i ] = i;
+        xTaskCreationResult = xTaskCreate( prvTestPreemptionDisableTask,
+                                           "TestPreemptionDisable",
                                            configMINIMAL_STACK_SIZE * 2,
-                                           NULL,
-                                           configMAX_PRIORITIES - 2,
-                                           &( xTaskHanldes[ i ] ) );
+                                           &xTaskIndexes[ i ],
+                                           configMAX_PRIORITIES - 2 - i,
+                                           &xTaskHanldes[ i ] );
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
     }
@@ -217,7 +193,7 @@ void tearDown( void )
     int i;
 
     /* Delete all the tasks. */
-    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
         if( xTaskHanldes[ i ] != NULL )
         {
@@ -229,7 +205,7 @@ void tearDown( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief A start entry for test runner to run FR06.
+ * @brief A start entry for test runner to run disable preemption test.
  */
 void vRunDisablePreemptionTest( void )
 {

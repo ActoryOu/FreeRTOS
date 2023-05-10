@@ -41,6 +41,9 @@
  *   - Have same remaining memory before creating task and after deleting task.
  */
 
+/* Standard includes. */
+#include <stdint.h>
+
 /* Kernel includes. */
 #include "FreeRTOS.h" /* Must come first. */
 #include "task.h"     /* RTOS task related API prototypes. */
@@ -51,7 +54,7 @@
 /**
  * @brief Timeout value to stop test.
  */
-#define TEST_TIMEOUT_MS    ( 10000 )
+#define TEST_TIMEOUT_MS    ( 1000 )
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
@@ -71,12 +74,12 @@ void Test_TaskDelete( void );
 /**
  * @brief Partial test case in "Task Delete" for "Self deletion".
  */
-BaseType_t Test_TaskSelfDelete( void );
+static void prvTestTaskSelfDelete( void );
 
 /**
  * @brief Partial test case in "Task Delete" for "Remote deletion".
  */
-BaseType_t Test_TaskRemoteDelete( void );
+static void prvTestTaskRemoteDelete( void );
 
 /**
  * @brief Task entry to delete itself.
@@ -92,7 +95,12 @@ static void prvDelayTask( void * pvParameters );
 /**
  * @brief Handles of the tasks created in this test.
  */
-static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
+static TaskHandle_t xTaskHandles[ configNUMBER_OF_CORES ];
+
+/**
+ * @brief Flag to indicate task run status.
+ */
+static BaseType_t xTaskRunStatus[ configNUMBER_OF_CORES ] = { pdFALSE };
 
 /**
  * @brief The heap size before creating tasks T0~Tn-1.
@@ -100,156 +108,116 @@ static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
 static uint32_t ulOriginalFreeHeapSize;
 /*-----------------------------------------------------------*/
 
-void Test_TaskDelete( void )
-{
-    BaseType_t xTestResult = pdPASS;
-
-    xTestResult = Test_TaskSelfDelete();
-
-    if( xTestResult )
-    {
-        Test_TaskRemoteDelete();
-    }
-}
-/*-----------------------------------------------------------*/
-
-BaseType_t Test_TaskSelfDelete( void )
-{
-    int i;
-    BaseType_t xTaskCreationResult;
-    TickType_t xStartTick = xTaskGetTickCount();
-    BaseType_t xTestResult = pdPASS;
-
-    /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
-    {
-        xTaskHanldes[ i ] = NULL;
-
-        xTaskCreationResult = xTaskCreate( prvSelfDeleteTask,
-                                           "SelfDel",
-                                           configMINIMAL_STACK_SIZE,
-                                           NULL,
-                                           configMAX_PRIORITIES - 2,
-                                           &( xTaskHanldes[ i ] ) );
-
-        if( xTaskCreationResult != pdPASS )
-        {
-            xTestResult = pdFALSE;
-            TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
-            break;
-        }
-    }
-
-    /* Wait tasks to delete itself. */
-    while( ulOriginalFreeHeapSize > xPortGetFreeHeapSize() )
-    {
-        vTaskDelay( pdMS_TO_TICKS( 10 ) );
-
-        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
-        {
-            break;
-        }
-    }
-
-    if( ulOriginalFreeHeapSize != xPortGetFreeHeapSize() )
-    {
-        TEST_ASSERT_EQUAL_INT( ulOriginalFreeHeapSize, xPortGetFreeHeapSize() );
-        xTestResult = pdFALSE;
-    }
-
-    return xTestResult;
-}
-/*-----------------------------------------------------------*/
-
-BaseType_t Test_TaskRemoteDelete( void )
-{
-    int i;
-    BaseType_t xTaskCreationResult;
-    TickType_t xStartTick = xTaskGetTickCount();
-    BaseType_t xTestResult = pdPASS;
-
-    /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
-    {
-        xTaskHanldes[ i ] = NULL;
-
-        xTaskCreationResult = xTaskCreate( prvDelayTask,
-                                           "KeepDelay",
-                                           configMINIMAL_STACK_SIZE,
-                                           NULL,
-                                           configMAX_PRIORITIES - 2,
-                                           &( xTaskHanldes[ i ] ) );
-
-        if( xTaskCreationResult != pdPASS )
-        {
-            xTestResult = pdFALSE;
-            TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
-            break;
-        }
-    }
-
-    /* Delay a while for tasks just created to run. */
-    vTaskDelay( pdMS_TO_TICKS( 10 ) );
-
-    /* Delete tasks remotely. */
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
-    {
-        if( xTaskHanldes[ i ] )
-        {
-            vTaskDelete( xTaskHanldes[ i ] );
-        }
-    }
-
-    /* Wait to recycle the memory. */
-    while( ulOriginalFreeHeapSize > xPortGetFreeHeapSize() )
-    {
-        vTaskDelay( pdMS_TO_TICKS( 10 ) );
-
-        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
-        {
-            break;
-        }
-    }
-
-    if( ulOriginalFreeHeapSize != xPortGetFreeHeapSize() )
-    {
-        TEST_ASSERT_EQUAL_INT( ulOriginalFreeHeapSize, xPortGetFreeHeapSize() );
-        xTestResult = pdFALSE;
-    }
-
-    return xTestResult;
-}
-/*-----------------------------------------------------------*/
-
 static void prvSelfDeleteTask( void * pvParameters )
 {
-    /* Silence warnings about unused parameters. */
-    ( void ) pvParameters;
+    BaseType_t *pxTaskRunStatus = ( BaseType_t * )pvParameters;
+
+    /* Setup the flag to indicate the taks has run. */
+    *pxTaskRunStatus = pdTRUE;
 
     vTaskDelete( NULL );
 
-    /* Idle the task. It shouldn't be run. */
-    for( ; ; )
-    {
-        vTaskDelay( pdMS_TO_TICKS( 10 ) );
-    }
+    /* The task delete itself. This line should not be run. */
+    *pxTaskRunStatus = pdFALSE;
 }
-
 /*-----------------------------------------------------------*/
 
 static void prvDelayTask( void * pvParameters )
 {
-    /* Silence warnings about unused parameters. */
-    ( void ) pvParameters;
+    BaseType_t *pxTaskRunStatus = ( BaseType_t * )pvParameters;
 
-    /* Idle the task */
-    for( ; ; )
-    {
-        vTaskDelay( pdMS_TO_TICKS( 10 ) );
-    }
+    /* Setup the flag to indicate the taks has run. */
+    *pxTaskRunStatus = pdTRUE;
+
+    /* Block this task then it can be deleted. */
+    vTaskDelay( portMAX_DELAY );
 }
-
 /*-----------------------------------------------------------*/
+
+static void prvTestTaskSelfDelete( void )
+{
+    uint32_t i;
+    BaseType_t xTaskCreationResult;
+    uint32_t ulFreeHeapSize;
+
+    /* Create configNUMBER_OF_CORES low priority tasks. */
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    {
+        xTaskRunStatus[ i ] = pdFALSE;
+        xTaskCreationResult = xTaskCreate( prvSelfDeleteTask,
+                                           "SelfDel",
+                                           configMINIMAL_STACK_SIZE,
+                                           ( void * )( &xTaskRunStatus[ i ] ),
+                                           configMAX_PRIORITIES - 2,
+                                           &xTaskHandles[ i ] );
+
+        TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
+    }
+
+    /* Wait tasks to delete itself. */
+    vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
+
+    /* Verify the task run status. */
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    {
+        TEST_ASSERT_EQUAL_MESSAGE( pdTRUE, xTaskRunStatus[ i ], "Task hasn't been run." );
+        xTaskHandles[ i ] = NULL;
+    }
+
+    /* Verify the heap size is recycled. */
+    ulFreeHeapSize = xPortGetFreeHeapSize();
+    TEST_ASSERT_EQUAL_INT_MESSAGE( ulOriginalFreeHeapSize, ulFreeHeapSize, "Self deleted task test failed." );
+}
+/*-----------------------------------------------------------*/
+
+static void prvTestTaskRemoteDelete( void )
+{
+    uint32_t i;
+    BaseType_t xTaskCreationResult;
+    uint32_t ulFreeHeapSize;
+
+    /* Create configNUMBER_OF_CORES low priority tasks. */
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    {
+        xTaskRunStatus[ i ] = pdFALSE;
+        xTaskCreationResult = xTaskCreate( prvDelayTask,
+                                           "KeepDelay",
+                                           configMINIMAL_STACK_SIZE,
+                                           ( void * )( &xTaskRunStatus[ i ] ),
+                                           configMAX_PRIORITIES - 2,
+                                           &xTaskHandles[ i ] );
+
+        TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
+    }
+
+    /* Delay a while for tasks just created to run. */
+    vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
+
+    /* Verify the task run status. */
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    {
+        TEST_ASSERT_EQUAL_MESSAGE( pdTRUE, xTaskRunStatus[ i ], "Task hasn't been run." );
+    }
+
+    /* Delete tasks remotely. */
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    {
+        vTaskDelete( xTaskHandles[ i ] );
+        xTaskHandles[ i ] = NULL;
+    }
+
+    ulFreeHeapSize = xPortGetFreeHeapSize();
+    TEST_ASSERT_EQUAL_INT_MESSAGE( ulOriginalFreeHeapSize, ulFreeHeapSize, "Remote deleted task test failed." );
+}
+/*-----------------------------------------------------------*/
+
+void Test_TaskDelete( void )
+{
+    prvTestTaskSelfDelete();
+    prvTestTaskRemoteDelete();
+}
+/*-----------------------------------------------------------*/
+
 /* Runs before every test, put init calls here. */
 void setUp( void )
 {
@@ -261,7 +229,15 @@ void setUp( void )
 /* Runs after every test, put clean-up calls here. */
 void tearDown( void )
 {
-    /* Nothing to release in this test case. */
+    uint32_t i;
+
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    {
+        if( xTaskHandles[ i ] != NULL )
+        {
+            vTaskDelete( xTaskHandles[ i ] );
+        }
+    }
 }
 /*-----------------------------------------------------------*/
 
@@ -276,5 +252,4 @@ void vRunTaskDeleteTest( void )
 
     UNITY_END();
 }
-
 /*-----------------------------------------------------------*/

@@ -30,16 +30,18 @@
  *        it shall relinquish the core instead of continuing to wait to enter critical section.
  *
  * Procedure:
- *   - Create ( num of cores ) tasks, T0 ~ T(n-1).
- *   - Priority testRunner > T0 > T1~T(n-1)
- *   - TestRunner task enter critical section.
- *   - T0 tries to enter critical section.
- *   - T1 ~ T(n-1) keep in busy loop.
- *   - TestRunner suspends Task T0.
+ *   - Create 1 low priority task, T0, to enter the critical section.
+ *   - Create n - 1 high priority tasks, T1 ~ T(n - 1), to occupy the core.
+ *   - Create 1 high priority task, Tn, to enter the critical section.
+ *   - Tn enters the critical section. T0 is waitng to enter the critical section.
+ *   - T1 ~ T(n - 1) suspend themselves.
+ *   - Tn resume T1 ~ T(n - 1) in the critical section then left the critical section.
  * Expected:
- *   - T0 is suspended and it never enters critical section.
- *   - Task T1 ~ T(n-1) are running.
+ *   - T0 doesn't enter the critical section since it's waiting for critical section is interrrupted.
  */
+
+/* Standard includes. */
+#include <stdint.h>
 
 /* Kernel includes. */
 #include "FreeRTOS.h" /* Must come first. */
@@ -48,12 +50,23 @@
 #include "unity.h"    /* unit testing support functions */
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief Busy looping count to wait for other cores.
+ */
+#define TEST_BUSY_LOOPING_COUNT     ( 10000 )
+
+/**
+ * @brief Timeout value to stop test.
+ */
+#define TEST_TIMEOUT_MS             ( 1000 )
+/*-----------------------------------------------------------*/
+
 #if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
 #endif /* if ( configNUMBER_OF_CORES < 2 ) */
 
 #if ( configRUN_MULTIPLE_PRIORITIES != 1 )
-    #error test_config.h must be included at the end of FreeRTOSConfig.h.
+    #error configRUN_MULTIPLE_PRIORITIES must be enabled by including test_config.h in FreeRTOSConfig.h.
 #endif /* if ( configRUN_MULTIPLE_PRIORITIES != 1 ) */
 
 #if ( configMAX_PRIORITIES <= 3 )
@@ -62,9 +75,14 @@
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Task function that tries to enter critical section.
+ * @brief Low priority task function that tries to enter critical section.
  */
-static void prvEnterCriticalTask( void * pvParameters );
+static void prvLowPriorityEnterCriticalTask( void * pvParameters );
+
+/**
+ * @brief High priority task function that tries to enter critical section.
+ */
+static void prvHighPriorityEnterCriticalTask( void * pvParameters );
 
 /**
  * @brief Function that implements a never blocking FreeRTOS task.
@@ -74,128 +92,23 @@ static void prvEverRunningTask( void * pvParameters );
 /**
  * @brief Test case "Interrupt Wait Critical".
  */
-static void Test_InterruptWaitCritical( void );
-/*-----------------------------------------------------------*/
-
-typedef enum CriticalStatus
-{
-    CS_WAIT = 0,
-    CS_ENTERING,
-    CS_ENTERED,
-    CS_EXIT,
-} CriticalSectionStatus_t;
+void Test_InterruptWaitCritical( void );
 /*-----------------------------------------------------------*/
 
 /**
  * @brief Handles of the tasks created in this test.
  */
-static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
+static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES + 1 ];
 
 /**
- * @brief A flag to know if testRunner entered critical section.
+ * @brief A flag to know if high priority entered critical section.
  */
-static BaseType_t volatile xIsTestRunnerEnteredCritical = pdFALSE;
+static volatile BaseType_t xHighPriorityTaskEnterCriticalSection = pdFALSE;
 
 /**
- * @brief A status to know if T0.
- *        - CS_WAIT:     Waiting for testRunner to enter critical section.
- *        - CS_ENTERING: Entering critical section.
- *        - CS_ENTERED:  Entered critical section.
- *        - CS_EXIT:     Exited critical section.
+ * @brief A flag to know if low priority entered critical section.
  */
-static CriticalSectionStatus_t volatile xT0CsStatus = CS_WAIT;
-
-/*-----------------------------------------------------------*/
-
-static void Test_InterruptWaitCritical( void )
-{
-    int i;
-    eTaskState xTaskState;
-    BaseType_t xIsTestPass = pdTRUE;
-
-    /* Yield for other cores to run tasks. */
-    taskYIELD();
-
-    taskENTER_CRITICAL();
-
-    xIsTestRunnerEnteredCritical = pdTRUE;
-
-    /* Busy loop to wait T0 to run. */
-    while( xT0CsStatus < CS_ENTERING )
-    {
-        /* Put asm here to avoid optimization by compiler. */
-        __asm volatile ( "nop" );
-    }
-
-    for( i = 0; i < 0xFFFF; i++ )
-    {
-        /* Put asm here to avoid optimization by compiler. */
-        __asm volatile ( "nop" );
-    }
-
-    vTaskSuspend( xTaskHanldes[ 0 ] );
-
-    taskEXIT_CRITICAL();
-
-    /* When testRunner exits CS, context switch continues.
-     * Busy loop here for task T1~T(n-1) to run */
-    for( i = 0; i < 0xFFFF; i++ )
-    {
-        /* Put asm here to avoid optimization by compiler. */
-        __asm volatile ( "nop" );
-    }
-
-    /* Ensure that T1~T(n-1) are running. */
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
-    {
-        xTaskState = eTaskGetState( xTaskHanldes[ i ] );
-
-        if( ( i == 0 ) && ( xTaskState == eRunning ) )
-        {
-            xIsTestPass = 0x10;
-            break;
-        }
-        else if( ( i != 0 ) && ( xTaskState != eRunning ) )
-        {
-            xIsTestPass = 0x20 | i;
-            break;
-        }
-    }
-
-    if( xT0CsStatus >= CS_ENTERED )
-    {
-        xIsTestPass |= 0x40;
-    }
-
-    TEST_ASSERT_EQUAL_INT( xIsTestPass, pdTRUE );
-}
-/*-----------------------------------------------------------*/
-
-static void prvEnterCriticalTask( void * pvParameters )
-{
-    /* Silence warnings about unused parameters. */
-    ( void ) pvParameters;
-
-    while( xIsTestRunnerEnteredCritical == pdFALSE )
-    {
-        /* Busy loop here until testRunner enters critical section. */
-        __asm volatile ( "nop" );
-    }
-
-    xT0CsStatus = CS_ENTERING;
-
-    taskENTER_CRITICAL();
-    xT0CsStatus = CS_ENTERED;
-    taskEXIT_CRITICAL();
-
-    xT0CsStatus = CS_EXIT;
-
-    for( ; ; )
-    {
-        /* Always running, put asm here to avoid optimization by compiler. */
-        __asm volatile ( "nop" );
-    }
-}
+static volatile BaseType_t xLowPriorityTaskEnterCriticalSection = pdFALSE;
 /*-----------------------------------------------------------*/
 
 static void prvEverRunningTask( void * pvParameters )
@@ -203,50 +116,172 @@ static void prvEverRunningTask( void * pvParameters )
     /* Silence warnings about unused parameters. */
     ( void ) pvParameters;
 
+    vTaskSuspend( NULL );
+
     for( ; ; )
     {
         /* Always running, put asm here to avoid optimization by compiler. */
         __asm volatile ( "nop" );
     }
 }
+/*-----------------------------------------------------------*/
+
+static void prvLowPriorityEnterCriticalTask( void * pvParameters )
+{
+    /* Silence warnings about unused parameters. */
+    ( void ) pvParameters;
+
+    /* Waiting for high priority task to enter the critical section first. */
+    while( xHighPriorityTaskEnterCriticalSection == pdFALSE );
+
+    taskENTER_CRITICAL();
+    {
+        /* This line should not be run if other higher priority tasks are waken
+         * up. This task should reqlinquish this core instead of entering the critical
+         * section. */
+        xLowPriorityTaskEnterCriticalSection = pdTRUE;
+    }
+    taskEXIT_CRITICAL();
+
+    for( ; ; )
+    {
+        /* Always running, put asm here to avoid optimization by compiler. */
+        __asm volatile ( "nop" );
+    }
+}
+/*-----------------------------------------------------------*/
+
+static void prvHighPriorityEnterCriticalTask( void * pvParameters )
+{
+    uint32_t i;
+    eTaskState taskState;
+    BaseType_t xAllTestTaskReady = pdFALSE;
+
+    /* Silence warnings about unused parameters. */
+    ( void ) pvParameters;
+
+    /* Check all the test task states before entering critical section. Low priority
+     * task should be of running state. Ever running tasks should suspend themselves. */
+    while( xAllTestTaskReady == pdFALSE )
+    {
+        xAllTestTaskReady = pdTRUE;
+
+        /* Check the low priority task status. */
+        taskState = eTaskGetState( xTaskHanldes[ 0 ] );
+        if( taskState != eRunning )
+        {
+            xAllTestTaskReady = pdFALSE;
+        }
+
+        /* Check the ever running priority task status. */
+        for( i = 1; i < configNUMBER_OF_CORES; i++ )
+        {
+            taskState = eTaskGetState( xTaskHanldes[ i ] );
+
+            if( taskState != eSuspended )
+            {
+                xAllTestTaskReady = pdFALSE;
+            }
+        }
+    }
+
+    taskENTER_CRITICAL();
+    {
+        xHighPriorityTaskEnterCriticalSection = pdTRUE;
+
+        /* Proper busy looping here to wait for low priority task. */
+        for( i = 0; i < TEST_BUSY_LOOPING_COUNT; i++ )
+        {
+            __asm volatile ( "nop" );
+        }
+
+        /* Resume tasks T1 ~ T(n - 1). All the cores are occupied by T1 ~ Tn due to
+         * higher priority. The low priority task's waiting for the critical section
+         * should be interrupted. */
+        for( i = 1; i < configNUMBER_OF_CORES; i++ )
+        {
+            vTaskResume( xTaskHanldes[ i ] );
+        }
+    }
+    taskEXIT_CRITICAL();
+
+    for( ; ; )
+    {
+        /* Always running, put asm here to avoid optimization by compiler. */
+        __asm volatile ( "nop" );
+    }
+}
+/*-----------------------------------------------------------*/
+
+void Test_InterruptWaitCritical( void )
+{
+    vTaskDelay( pdMS_TO_TICKS ( TEST_TIMEOUT_MS ) );
+
+    /* Verify the high priority task has entered the critical section. */
+    TEST_ASSERT_EQUAL_MESSAGE( pdTRUE, xHighPriorityTaskEnterCriticalSection, "High priority task not enter the critical section." );
+
+    /* Verify the low priority task relinquishes the core for higer priority tasks. */
+    TEST_ASSERT_EQUAL_MESSAGE( pdFALSE, xLowPriorityTaskEnterCriticalSection, "Low priority task should relinquish the core." );
+
+    /* Suspend the high priority task and block the test runner. The low priority task
+     * should be able to enter the critical section now due to core available. */
+    vTaskSuspend( xTaskHanldes[ configNUMBER_OF_CORES ] );
+
+    vTaskDelay( pdMS_TO_TICKS ( TEST_TIMEOUT_MS ) );
+
+    /* Verify the low priority task is able to enter the critical section. */
+    TEST_ASSERT_EQUAL_MESSAGE( pdTRUE, xLowPriorityTaskEnterCriticalSection, "Low priority task should enter the critical section." );
+}
+/*-----------------------------------------------------------*/
 
 /* Runs before every test, put init calls here. */
 void setUp( void )
 {
-    int i;
+    uint32_t i;
     BaseType_t xTaskCreationResult;
 
-    xTaskCreationResult = xTaskCreate( prvEnterCriticalTask,
-                                       "EnterCS",
+    /* Create one test task with low priority to enter the critical section. */
+    xTaskCreationResult = xTaskCreate( prvLowPriorityEnterCriticalTask,
+                                       "EnterCSLow",
                                        configMINIMAL_STACK_SIZE,
                                        NULL,
-                                       configMAX_PRIORITIES - 2,
-                                       &( xTaskHanldes[ 0 ] ) );
+                                       configMAX_PRIORITIES - 3,
+                                       &xTaskHanldes[ 0 ] );
 
     TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
 
-    /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
+    /* Create configNUMBER_OF_CORES - 1 with high priority to occupy the cores. */
     for( i = 1; i < configNUMBER_OF_CORES; i++ )
     {
         xTaskCreationResult = xTaskCreate( prvEverRunningTask,
                                            "EverRunning",
                                            configMINIMAL_STACK_SIZE,
                                            NULL,
-                                           configMAX_PRIORITIES - 3,
-                                           &( xTaskHanldes[ i ] ) );
+                                           configMAX_PRIORITIES - 2,
+                                           &xTaskHanldes[ i ] );
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
     }
+
+    /* Create one test task with high priority to enter the critical section. */
+    xTaskCreationResult = xTaskCreate( prvHighPriorityEnterCriticalTask,
+                                       "EnterCSHigh",
+                                       configMINIMAL_STACK_SIZE,
+                                       NULL,
+                                       configMAX_PRIORITIES - 2,
+                                       &xTaskHanldes[ configNUMBER_OF_CORES ] );
+
+    TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
 }
 /*-----------------------------------------------------------*/
 
 /* Runs after every test, put clean-up calls here. */
 void tearDown( void )
 {
-    int i;
+    uint32_t i;
 
     /* Delete all the tasks. */
-    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
         if( xTaskHanldes[ i ] != NULL )
         {
@@ -256,6 +291,9 @@ void tearDown( void )
 }
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief A start entry for test runner to run interrupt task wait critical section test.
+ */
 void vRunInterruptWaitCriticalTest( void )
 {
     UNITY_BEGIN();

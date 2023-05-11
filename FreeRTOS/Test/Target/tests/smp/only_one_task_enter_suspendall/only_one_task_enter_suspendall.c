@@ -26,18 +26,18 @@
 
 /**
  * @file only_one_task_enter_suspendall.c
- * @brief Only one task shall be able to enter the section protected by vTaskSuspendAll/xTaskResumeAll.
+ * @brief Only one task/ISR shall be able to enter critical section at a time.
  *
  * Procedure:
  *   - Create ( num of cores ) tasks.
- *   - All tasks increase the counter for TASK_INCREASE_COUNTER_TIMES times.
- *     - Call vTaskSuspendAll.
- *     - Increase the counter for TASK_INCREASE_COUNTER_TIMES times.
- *     - Call xTaskResumeAll.
+ *   - All tasks increase the counter for TASK_INCREASE_COUNTER_TIMES times in section
+ *     protected by scheduler suspended.
  * Expected:
- *   - Counter should be increased by COUNTER_MAX for a task in its loop.
- *   - Counter should be ( num of cores * COUNTER_MAX ) in the end.
+ *   - All tasks have correct value of counter after increasing.
  */
+
+/* Standard includes. */
+#include <stdint.h>
 
 /* Kernel includes. */
 #include "FreeRTOS.h" /* Must come first. */
@@ -54,41 +54,27 @@
 /**
  * @brief Timeout value to stop test.
  */
-#define TEST_TIMEOUT_MS                ( 10000 )
+#define TEST_TIMEOUT_MS                ( 1000 )
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Test case "Only One Task Suspend scheduler".
+ */
+void Test_OnlyOneTaskEnterSuspendAll( void );
+
+/**
+ * @brief Task function to increase counter then keep delaying.
+ */
+static void prvTaskIncCounter( void * pvParameters );
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
 #endif /* if ( configNUMBER_OF_CORES < 2 ) */
 
-#if ( configRUN_MULTIPLE_PRIORITIES != 1 )
-    #error test_config.h must be included at the end of FreeRTOSConfig.h.
-#endif /* if ( configRUN_MULTIPLE_PRIORITIES != 1 ) */
-
-#if ( configMAX_PRIORITIES <= 1 )
-    #error configMAX_PRIORITIES must be larger than 1 to avoid scheduling idle tasks unexpectly.
+#if ( configMAX_PRIORITIES <= 2 )
+    #error configMAX_PRIORITIES must be larger than 2 to avoid scheduling idle tasks unexpectly.
 #endif /* if ( configMAX_PRIORITIES <= 2 ) */
-/*-----------------------------------------------------------*/
-
-/**
- * @brief Test case "Only One Task Enter SuspendAll".
- */
-static void Test_OnlyOneTaskEnterSuspendAll( void );
-
-/**
- * @brief Task function to increase counter then keep delaying.
- */
-static void prvTaskIncCounter( void * pvParameters );
-
-/**
- * @brief Function to increase counter in critical section.
- */
-static void loopIncCounter( void );
-/*-----------------------------------------------------------*/
-
-#if ( configNUMBER_OF_CORES < 2 )
-    #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
-#endif /* if configNUMBER_OF_CORES != 2 */
 /*-----------------------------------------------------------*/
 
 /**
@@ -97,89 +83,115 @@ static void loopIncCounter( void );
 static TaskHandle_t xTaskHanldes[ configNUMBER_OF_CORES ];
 
 /**
+ * @brief Indexes of the tasks created in this test.
+ */
+static uint32_t xTaskIndexes[ configNUMBER_OF_CORES ];
+
+/**
+ * @brief Flags to indicate if task T0~Tn-1 finish or not.
+ */
+static BaseType_t xTaskTestResults[ configNUMBER_OF_CORES ] = { pdFAIL };
+
+/**
+ * @brief Variables to indicate task is ready for testing.
+ */
+static volatile BaseType_t xTaskReady[ configNUMBER_OF_CORES ] = { pdFALSE };
+
+/**
  * @brief Counter for all tasks to increase.
  */
-static BaseType_t xTaskCounter = 0;
-/*-----------------------------------------------------------*/
-
-static void Test_OnlyOneTaskEnterSuspendAll( void )
-{
-    TickType_t xStartTick = xTaskGetTickCount();
-
-    /* Delay for other cores to run tasks. */
-    vTaskDelay( pdMS_TO_TICKS( 10 ) );
-
-    /* Wait other tasks. */
-    while( xTaskCounter < configNUMBER_OF_CORES * TASK_INCREASE_COUNTER_TIMES )
-    {
-        vTaskDelay( pdMS_TO_TICKS( 10 ) );
-
-        if( ( xTaskGetTickCount() - xStartTick ) >= pdMS_TO_TICKS( TEST_TIMEOUT_MS ) )
-        {
-            break;
-        }
-    }
-
-    TEST_ASSERT_EQUAL_INT( xTaskCounter, configNUMBER_OF_CORES * TASK_INCREASE_COUNTER_TIMES );
-}
-
-/*-----------------------------------------------------------*/
-
-static void loopIncCounter( void )
-{
-    BaseType_t xTempTaskCounter = 0;
-    BaseType_t xIsTestPass = pdTRUE;
-    int i;
-
-    vTaskSuspendAll();
-
-    xTempTaskCounter = xTaskCounter;
-
-    for( i = 0; i < TASK_INCREASE_COUNTER_TIMES; i++ )
-    {
-        xTaskCounter++;
-        xTempTaskCounter++;
-
-        if( xTaskCounter != xTempTaskCounter )
-        {
-            xIsTestPass = pdFALSE;
-        }
-    }
-
-    xTaskResumeAll();
-
-    TEST_ASSERT_TRUE( xIsTestPass );
-}
+static volatile uint32_t xTaskCounter = 0;
 /*-----------------------------------------------------------*/
 
 static void prvTaskIncCounter( void * pvParameters )
 {
-    ( void ) pvParameters;
+    uint32_t currentTaskIdx = *( ( int * ) pvParameters );
+    BaseType_t xAllTaskReady = pdFALSE;
+    BaseType_t xTestResult = pdPASS;
+    uint32_t xTempTaskCounter = 0;
+    uint32_t i;
 
-    loopIncCounter();
-
-    while( pdTRUE )
+    /* Ensure all test tasks are running in the task function. */
+    xTaskReady[ currentTaskIdx ] = pdTRUE;
+    while( xAllTaskReady == pdFALSE )
     {
-        vTaskDelay( pdMS_TO_TICKS( 100 ) );
+        xAllTaskReady = pdTRUE;
+        for( i = 0; i < configNUMBER_OF_CORES; i++ )
+        {
+            if( xTaskReady[ i ] != pdTRUE )
+            {
+                xAllTaskReady = pdFALSE;
+                break;
+            }
+        }
     }
+
+    /* Increase the test counter in the loop. The test expects only one task can increase
+     * the shared variable xTaskCounter protected by suspending scheduler at the same time. */
+    vTaskSuspendAll();
+    {
+        xTempTaskCounter = xTaskCounter;
+        for( i = 0; i < TASK_INCREASE_COUNTER_TIMES; i++ )
+        {
+            /* Increase the local variable xTempTaskCounter and shared variable xTaskCounter.
+             * They should have the same value when scheduler suspended. */
+            xTaskCounter++;
+            xTempTaskCounter++;
+
+            /* If multiple tasks run in the section protected by scheduler suspended, shared
+             * variable will be increased by multiple tasks. Local variable xTempTaskCounter
+             * won't be equal to xTaskCounter. */
+            if( xTaskCounter != xTempTaskCounter )
+            {
+                printf( "%u is not %u\r\n", xTaskCounter, xTempTaskCounter );
+                xTestResult = pdFAIL;
+                break;
+            }
+        }
+    }
+    ( void )xTaskResumeAll();
+
+    xTaskTestResults[ currentTaskIdx ] = xTestResult;
+
+    /* Blocking the test task. */
+    vTaskDelay( portMAX_DELAY );
+}
+/*-----------------------------------------------------------*/
+
+void Test_OnlyOneTaskEnterSuspendAll( void )
+{
+    uint32_t i;
+
+    /* Delay for other cores to run tasks. */
+    vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
+
+    /* Verify each test task result. */
+    for( i = 0; i < configNUMBER_OF_CORES; i++ )
+    {
+        TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskTestResults[ i ], "Critical section test task failed." );
+    }
+
+    /* Verify the shared variable counter value. */
+    TEST_ASSERT_EQUAL_UINT32( configNUMBER_OF_CORES * TASK_INCREASE_COUNTER_TIMES, xTaskCounter );
 }
 /*-----------------------------------------------------------*/
 
 /* Runs before every test, put init calls here. */
 void setUp( void )
 {
-    int i;
+    uint32_t i;
     BaseType_t xTaskCreationResult;
 
     /* Create configNUMBER_OF_CORES low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
+        xTaskIndexes[ i ] = i;
         xTaskCreationResult = xTaskCreate( prvTaskIncCounter,
                                            "IncCounter",
                                            configMINIMAL_STACK_SIZE,
-                                           NULL,
-                                           configMAX_PRIORITIES - 1,
-                                           &( xTaskHanldes[ i ] ) );
+                                           &xTaskIndexes[ i ],
+                                           configMAX_PRIORITIES - 2,
+                                           &xTaskHanldes[ i ] );
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
     }
@@ -189,7 +201,7 @@ void setUp( void )
 /* Runs after every test, put clean-up calls here. */
 void tearDown( void )
 {
-    int i;
+    uint32_t i;
 
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
@@ -203,7 +215,7 @@ void tearDown( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief A start entry for test runner to run FR10.
+ * @brief A start entry for test runner to run scheduler suspended test.
  */
 void vRunOnlyOneTaskEnterSuspendAll( void )
 {
@@ -213,3 +225,4 @@ void vRunOnlyOneTaskEnterSuspendAll( void )
 
     UNITY_END();
 }
+/*-----------------------------------------------------------*/

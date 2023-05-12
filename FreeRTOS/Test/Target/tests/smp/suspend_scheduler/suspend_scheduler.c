@@ -60,7 +60,7 @@
 /**
  * @brief Task function for T0.
  */
-static void prvPriorityChangeTask( void * pvParameters )
+static void prvPriorityChangeTask( void * pvParameters );
 
 /**
  * @brief Task function for other tasks to occupy the core.
@@ -138,18 +138,18 @@ void Test_SuspendScheduler( void )
     }
 
     /* Verify that the test task is not running. TestRunner and T1 ~ T(n - 1)
-     * has higher priority than T0. */
+     * has higher priority than T0. Scheduler won't select T0 to run. */
     TEST_ASSERT_EQUAL( pdFALSE, xTaskIsRunning );
 
     /* Raise the priority of T0 when scheduler suspended. T0 has higher priority than
      * other busy running tasks. However, the schduler is suspended. T0 should not preempt
-     * any other lower priority busy running task. */
+     * any busy running task. */
     vTaskSuspendAll();
     {
         /* Raise the test task priority. */
-        vTaskPrioritySet( xTaskHanldes[ 0 ], configMAX_PRIORITIES - 1 );
+        vTaskPrioritySet( xTaskHanldes[ configNUMBER_OF_CORES - 1 ], configMAX_PRIORITIES - 1 );
 
-        /* Busy loop here to wait for other cores. */
+        /* Busy looping here to wait for other cores. */
         for( i = 0; i < TEST_BUSY_LOOPING_COUNT; i++ )
         {
             __asm volatile ( "nop" );
@@ -163,7 +163,7 @@ void Test_SuspendScheduler( void )
     /* Verify that the test task is not scheduled when scheduler is suspended. */
     TEST_ASSERT_EQUAL( pdFALSE, xTestTaskRunningStatus );
 
-    /* Busy loop here to wait for other cores. */
+    /* Busy looping here to wait for other cores. */
     for( i = 0; i < TEST_BUSY_LOOPING_COUNT; i++ )
     {
         __asm volatile ( "nop" );
@@ -180,17 +180,8 @@ void setUp( void )
     uint32_t i;
     BaseType_t xTaskCreationResult;
 
-    xTaskCreationResult = xTaskCreate( prvPriorityChangeTask,
-                                       "TestTask",
-                                       configMINIMAL_STACK_SIZE,
-                                       NULL,
-                                       configMAX_PRIORITIES - 3,
-                                       &xTaskHanldes[ 0 ] );
-
-    TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
-
     /* Create configNUMBER_OF_CORES - 1 busy running tasks with medium priority. */
-    for( i = 1; i < configNUMBER_OF_CORES; i++ )
+    for( i = 0; i < ( configNUMBER_OF_CORES - 1 ); i++ )
     {
         xTaskCreationResult = xTaskCreate( prvBusyRunningTask,
                                            "BusyRun",
@@ -201,6 +192,16 @@ void setUp( void )
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
     }
+
+    /* Create the test task with lower priority. */
+    xTaskCreationResult = xTaskCreate( prvPriorityChangeTask,
+                                       "TestTask",
+                                       configMINIMAL_STACK_SIZE,
+                                       NULL,
+                                       configMAX_PRIORITIES - 3,
+                                       &xTaskHanldes[ configNUMBER_OF_CORES - 1 ] );
+
+    TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
 }
 /*-----------------------------------------------------------*/
 

@@ -110,7 +110,7 @@ static uint32_t ulOriginalFreeHeapSize;
 
 static void prvSelfDeleteTask( void * pvParameters )
 {
-    BaseType_t *pxTaskRunStatus = ( BaseType_t * )pvParameters;
+    BaseType_t * pxTaskRunStatus = ( BaseType_t * ) pvParameters;
 
     /* Setup the flag to indicate the taks has run. */
     *pxTaskRunStatus = pdTRUE;
@@ -124,7 +124,7 @@ static void prvSelfDeleteTask( void * pvParameters )
 
 static void prvDelayTask( void * pvParameters )
 {
-    BaseType_t *pxTaskRunStatus = ( BaseType_t * )pvParameters;
+    BaseType_t * pxTaskRunStatus = ( BaseType_t * ) pvParameters;
 
     /* Setup the flag to indicate the taks has run. */
     *pxTaskRunStatus = pdTRUE;
@@ -147,14 +147,14 @@ static void prvTestTaskSelfDelete( void )
         xTaskCreationResult = xTaskCreate( prvSelfDeleteTask,
                                            "SelfDel",
                                            configMINIMAL_STACK_SIZE,
-                                           ( void * )( &xTaskRunStatus[ i ] ),
+                                           ( void * ) ( &xTaskRunStatus[ i ] ),
                                            configMAX_PRIORITIES - 2,
                                            &xTaskHandles[ i ] );
 
         TEST_ASSERT_EQUAL_MESSAGE( pdPASS, xTaskCreationResult, "Task creation failed." );
     }
 
-    /* Wait tasks to delete itself. */
+    /* Wait task to delete itself. */
     vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
 
     /* Verify the task run status. */
@@ -183,7 +183,7 @@ static void prvTestTaskRemoteDelete( void )
         xTaskCreationResult = xTaskCreate( prvDelayTask,
                                            "KeepDelay",
                                            configMINIMAL_STACK_SIZE,
-                                           ( void * )( &xTaskRunStatus[ i ] ),
+                                           ( void * ) ( &xTaskRunStatus[ i ] ),
                                            configMAX_PRIORITIES - 2,
                                            &xTaskHandles[ i ] );
 

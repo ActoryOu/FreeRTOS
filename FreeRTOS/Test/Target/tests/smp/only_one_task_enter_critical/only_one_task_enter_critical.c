@@ -30,7 +30,7 @@
  *
  * Procedure:
  *   - Create ( num of cores ) tasks.
- *   - All tasks increase the counter for TASK_INCREASE_COUNTER_TIMES times.
+ *   - All tasks increase the counter for TASK_INCREASE_COUNTER_TIMES times in critical section.
  * Expected:
  *   - All tasks have correct value of counter after increasing.
  */
@@ -71,8 +71,8 @@ static void prvTaskIncCounter( void * pvParameters );
     #error This test is for FreeRTOS SMP and therefore, requires at least 2 cores.
 #endif /* if ( configNUMBER_OF_CORES < 2 ) */
 
-#if ( configMAX_PRIORITIES <= 1 )
-    #error configMAX_PRIORITIES must be larger than 1 to avoid scheduling idle tasks unexpectly.
+#if ( configMAX_PRIORITIES <= 2 )
+    #error configMAX_PRIORITIES must be larger than 2 to avoid scheduling idle tasks unexpectly.
 #endif /* if ( configMAX_PRIORITIES <= 2 ) */
 /*-----------------------------------------------------------*/
 
@@ -112,9 +112,11 @@ static void prvTaskIncCounter( void * pvParameters )
 
     /* Ensure all test tasks are running in the task function. */
     xTaskReady[ currentTaskIdx ] = pdTRUE;
+
     while( xAllTaskReady == pdFALSE )
     {
         xAllTaskReady = pdTRUE;
+
         for( i = 0; i < configNUMBER_OF_CORES; i++ )
         {
             if( xTaskReady[ i ] != pdTRUE )
@@ -126,10 +128,11 @@ static void prvTaskIncCounter( void * pvParameters )
     }
 
     /* Increase the test counter in the loop. The test expects only one task can increase
-     * the shared variable xTaskCounter protected by critical section at the same time. */
+    * the shared variable xTaskCounter protected by critical section at the same time. */
     taskENTER_CRITICAL();
     {
         xTempTaskCounter = xTaskCounter;
+
         for( i = 0; i < TASK_INCREASE_COUNTER_TIMES; i++ )
         {
             /* Increase the local variable xTempTaskCounter and shared variable xTaskCounter.
@@ -138,11 +141,10 @@ static void prvTaskIncCounter( void * pvParameters )
             xTempTaskCounter++;
 
             /* If multiple tasks run in the critical section, shared variable will
-             * be increased by multiple task. Local variable xTempTaskCounter won't be
+             * be increased by multiple tasks. Local variable xTempTaskCounter won't be
              * equal to xTaskCounter. */
             if( xTaskCounter != xTempTaskCounter )
             {
-                printf( "%u is not %u\r\n", xTaskCounter, xTempTaskCounter );
                 xTestResult = pdFAIL;
                 break;
             }

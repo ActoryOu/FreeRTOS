@@ -38,7 +38,6 @@
 #include <stdint.h>
 
 /* Kernel includes. */
-
 #include "FreeRTOS.h" /* Must come first. */
 #include "task.h"     /* RTOS task related API prototypes. */
 
@@ -139,6 +138,7 @@ void Test_ScheduleHighestPirority( void )
 
     /* Test runner thread is notified within TEST_TIMEOUT_MS. */
     TEST_ASSERT_EQUAL( pdTRUE, xReturn );
+
     /* The notified value indicates that no error occurred during the test. */
     TEST_ASSERT_EQUAL_INT( pdPASS, ulNotifiedValue );
 }
@@ -147,8 +147,12 @@ void Test_ScheduleHighestPirority( void )
 /* Runs before every test, put init calls here. */
 void setUp( void )
 {
-    int i;
+    uint32_t i;
     BaseType_t xTaskCreationResult;
+
+    /* Save the test runner task handle here. Test runner will be notified when test
+     * finish or timeout. */
+    xTestRunnerTaskHandle = xTaskGetCurrentTaskHandle();
 
     /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
@@ -187,8 +191,6 @@ void tearDown( void )
  */
 void vRunScheduleHighestPriorityTest( void )
 {
-    xTestRunnerTaskHandle = xTaskGetCurrentTaskHandle();
-
     UNITY_BEGIN();
 
     RUN_TEST( Test_ScheduleHighestPirority );

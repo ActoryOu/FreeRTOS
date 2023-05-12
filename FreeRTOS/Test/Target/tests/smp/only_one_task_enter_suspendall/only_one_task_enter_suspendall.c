@@ -113,9 +113,11 @@ static void prvTaskIncCounter( void * pvParameters )
 
     /* Ensure all test tasks are running in the task function. */
     xTaskReady[ currentTaskIdx ] = pdTRUE;
+
     while( xAllTaskReady == pdFALSE )
     {
         xAllTaskReady = pdTRUE;
+
         for( i = 0; i < configNUMBER_OF_CORES; i++ )
         {
             if( xTaskReady[ i ] != pdTRUE )
@@ -131,6 +133,7 @@ static void prvTaskIncCounter( void * pvParameters )
     vTaskSuspendAll();
     {
         xTempTaskCounter = xTaskCounter;
+
         for( i = 0; i < TASK_INCREASE_COUNTER_TIMES; i++ )
         {
             /* Increase the local variable xTempTaskCounter and shared variable xTaskCounter.
@@ -143,13 +146,12 @@ static void prvTaskIncCounter( void * pvParameters )
              * won't be equal to xTaskCounter. */
             if( xTaskCounter != xTempTaskCounter )
             {
-                printf( "%u is not %u\r\n", xTaskCounter, xTempTaskCounter );
                 xTestResult = pdFAIL;
                 break;
             }
         }
     }
-    ( void )xTaskResumeAll();
+    ( void ) xTaskResumeAll();
 
     xTaskTestResults[ currentTaskIdx ] = xTestResult;
 
@@ -182,7 +184,7 @@ void setUp( void )
     uint32_t i;
     BaseType_t xTaskCreationResult;
 
-    /* Create configNUMBER_OF_CORES low priority tasks. */
+    /* Create configNUMBER_OF_CORES test tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
     {
         xTaskIndexes[ i ] = i;

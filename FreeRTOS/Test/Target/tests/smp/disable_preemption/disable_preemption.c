@@ -51,7 +51,7 @@
 /**
  * @brief Timeout value to stop test.
  */
-#define TEST_TIMEOUT_MS         ( 1000 )
+#define TEST_TIMEOUT_MS    ( 1000 )
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
@@ -99,41 +99,47 @@ static void prvTestPreemptionDisableTask( void * pvParameters )
     uint32_t currentTaskIdx = *( ( int * ) pvParameters );
     uint32_t taskIndex;
     eTaskState taskState;
-    BaseType_t highPriorityTasksSuspended = pdFALSE;
+    BaseType_t xHighPriorityTasksSuspended = pdFALSE;
 
     if( currentTaskIdx == configNUMBER_OF_CORES )
     {
         /* Wait for all other higher priority tasks suspend themselves. */
-        while( highPriorityTasksSuspended == pdFALSE )
+        while( xHighPriorityTasksSuspended == pdFALSE )
         {
-            highPriorityTasksSuspended = pdTRUE;
+            xHighPriorityTasksSuspended = pdTRUE;
+
             for( taskIndex = 0; taskIndex < configNUMBER_OF_CORES; taskIndex++ )
             {
                 taskState = eTaskGetState( xTaskHanldes[ taskIndex ] );
+
                 if( taskState != eSuspended )
                 {
-                    highPriorityTasksSuspended = pdFALSE;
+                    xHighPriorityTasksSuspended = pdFALSE;
                     break;
                 }
             }
         }
 
         /* Disable preemption and wake up all the other higher priority tasks.
-         * There are core number plus one tasks. If preemption is not disabled,
-         * the scheduler will choose higher priority task to run. */
-        vTaskDisablePreemption( NULL );
+         * There are equal core number higher priority tasks. The scheduler should
+         * not request the lower priority task to yield for a higher priority task
+         * when this task disables preemption. */
+        vTaskPreemptionDisable( NULL );
 
         for( taskIndex = 0; taskIndex < configNUMBER_OF_CORES; taskIndex++ )
         {
             vTaskResume( xTaskHanldes[ taskIndex ] );
         }
 
-        /* If preemption is not disabled, this task will be switched out due to
-         * lowest priority. The following line won't be run. */
+        /* This task will not be switched out for other higher priority task when
+         * preemption disabled. The xTaskTestResult should be set pdPASS by the lower
+         * priority task. This variable is checked at test runner. */
         xTaskTestResult = pdPASS;
     }
     else
     {
+        /* Other test tasks suspend themselve and will be resume by a lower priority
+         * task with preemption disabled later. */
         vTaskSuspend( NULL );
     }
 
@@ -150,16 +156,17 @@ void Test_DisablePreemption( void )
 {
     eTaskState taskState;
 
-    /* TEST_TIMEOUT_MS is long enough to run this task. */
+    /* TEST_TIMEOUT_MS is long enough to run this test. */
     vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
 
     /* Verify the lowest priority task runs after resuming all test tasks. */
     TEST_ASSERT_EQUAL( pdPASS, xTaskTestResult );
 
-    /* Enable preemption of the lowest priority task. */
-    vTaskDisablePreemption( xTaskHanldes[ configNUMBER_OF_CORES ] );
+    /* Enable preemption of the lowest priority task. The scheduler will request this
+     * task to yield for a higher priority task. */
+    vTaskPreemptionEnable( xTaskHanldes[ configNUMBER_OF_CORES ] );
 
-    /* Verify the task is of ready state now. */
+    /* Verify that the task is of ready state now. */
     taskState = eTaskGetState( xTaskHanldes[ configNUMBER_OF_CORES ] );
     TEST_ASSERT_EQUAL( eReady, taskState );
 }
@@ -171,7 +178,7 @@ void setUp( void )
     uint32_t i;
     BaseType_t xTaskCreationResult;
 
-    /* Create configNUMBER_OF_CORES - 1 low priority tasks. */
+    /* Create configNUMBER_OF_CORES + 1 tasks with desending priorities. */
     for( i = 0; i < ( configNUMBER_OF_CORES + 1 ); i++ )
     {
         xTaskIndexes[ i ] = i;
@@ -190,7 +197,7 @@ void setUp( void )
 /* Runs after every test, put clean-up calls here. */
 void tearDown( void )
 {
-    int i;
+    uint32_t i;
 
     /* Delete all the tasks. */
     for( i = 0; i < configNUMBER_OF_CORES; i++ )
@@ -198,7 +205,6 @@ void tearDown( void )
         if( xTaskHanldes[ i ] != NULL )
         {
             vTaskDelete( xTaskHanldes[ i ] );
-            xTaskHanldes[ i ] = 0;
         }
     }
 }

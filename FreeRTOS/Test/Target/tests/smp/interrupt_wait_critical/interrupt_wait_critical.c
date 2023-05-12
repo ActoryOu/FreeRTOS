@@ -53,12 +53,12 @@
 /**
  * @brief Busy looping count to wait for other cores.
  */
-#define TEST_BUSY_LOOPING_COUNT     ( 10000 )
+#define TEST_BUSY_LOOPING_COUNT    ( 10000 )
 
 /**
  * @brief Timeout value to stop test.
  */
-#define TEST_TIMEOUT_MS             ( 1000 )
+#define TEST_TIMEOUT_MS            ( 1000 )
 /*-----------------------------------------------------------*/
 
 #if ( configNUMBER_OF_CORES < 2 )
@@ -132,7 +132,9 @@ static void prvLowPriorityEnterCriticalTask( void * pvParameters )
     ( void ) pvParameters;
 
     /* Waiting for high priority task to enter the critical section first. */
-    while( xHighPriorityTaskEnterCriticalSection == pdFALSE );
+    while( xHighPriorityTaskEnterCriticalSection == pdFALSE )
+    {
+    }
 
     taskENTER_CRITICAL();
     {
@@ -168,6 +170,7 @@ static void prvHighPriorityEnterCriticalTask( void * pvParameters )
 
         /* Check the low priority task status. */
         taskState = eTaskGetState( xTaskHanldes[ 0 ] );
+
         if( taskState != eRunning )
         {
             xAllTestTaskReady = pdFALSE;
@@ -215,7 +218,7 @@ static void prvHighPriorityEnterCriticalTask( void * pvParameters )
 
 void Test_InterruptWaitCritical( void )
 {
-    vTaskDelay( pdMS_TO_TICKS ( TEST_TIMEOUT_MS ) );
+    vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
 
     /* Verify the high priority task has entered the critical section. */
     TEST_ASSERT_EQUAL_MESSAGE( pdTRUE, xHighPriorityTaskEnterCriticalSection, "High priority task not enter the critical section." );
@@ -227,7 +230,7 @@ void Test_InterruptWaitCritical( void )
      * should be able to enter the critical section now due to core available. */
     vTaskSuspend( xTaskHanldes[ configNUMBER_OF_CORES ] );
 
-    vTaskDelay( pdMS_TO_TICKS ( TEST_TIMEOUT_MS ) );
+    vTaskDelay( pdMS_TO_TICKS( TEST_TIMEOUT_MS ) );
 
     /* Verify the low priority task is able to enter the critical section. */
     TEST_ASSERT_EQUAL_MESSAGE( pdTRUE, xLowPriorityTaskEnterCriticalSection, "Low priority task should enter the critical section." );

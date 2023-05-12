@@ -68,9 +68,9 @@
     #error configUSE_CORE_AFFINITY must be disabled by including test_config.h in FreeRTOSConfig.h.
 #endif /* if configUSE_CORE_AFFINITY != 0 */
 
-#if ( configMAX_PRIORITIES <= ( configNUMBER_OF_CORES + 1 ) )
+#if ( configMAX_PRIORITIES <= ( configNUMBER_OF_CORES + 2 ) )
     #error This test creates tasks with different priority, requires configMAX_PRIORITIES to be larger than configNUMBER_OF_CORES.
-#endif /* if configNUMBER_OF_CORES != 2 */
+#endif /* if ( configMAX_PRIORITIES <= ( configNUMBER_OF_CORES + 2 ) ) */
 /*-----------------------------------------------------------*/
 
 /**

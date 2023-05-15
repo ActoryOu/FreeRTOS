@@ -60,6 +60,7 @@
 #define configNUM_THREAD_LOCAL_STORAGE_POINTERS    5
 #define configSTACK_DEPTH_TYPE                     uint32_t
 #define configMESSAGE_BUFFER_LENGTH_TYPE           size_t
+#define configUSE_MINIMAL_IDLE_HOOK                0
 
 /* Memory allocation related definitions. */
 #define configSUPPORT_STATIC_ALLOCATION            1

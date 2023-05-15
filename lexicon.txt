@@ -64,6 +64,7 @@ ascii
 asf
 asm
 asn
+aspr
 ast
 async
 atmega
@@ -178,6 +179,7 @@ burtcmodeem
 busfault
 buttonisr
 bvic
+bwantdhcp
 bytesreceived
 bytessent
 bytestorecv
@@ -818,6 +820,7 @@ fpga
 fpidiv
 fprintf
 fpu
+fpscr
 fr
 framming
 france
@@ -1235,6 +1238,7 @@ lsb
 lserialputstring
 lsize
 lsl
+lsls
 lsr
 lstringlength
 ltd
@@ -1715,6 +1719,7 @@ phostname
 php
 phy
 pic
+pico
 pidr
 pingreq
 pingresp
@@ -2140,6 +2145,7 @@ puxstackbuffer
 pv
 pvalue
 pvargs
+pvargument
 pvbuffer
 pvcontext
 pvctx
@@ -2166,6 +2172,7 @@ pxcertificatebufferlength
 pxcertificatecontext
 pxcertificateidbufferlength
 pxclass
+pxclidefinitionlistitembuffer
 pxclient
 pxcommand
 pxcommandcontext
@@ -2180,6 +2187,7 @@ pxdptr
 pxecdsacontext
 pxecparams
 pxecparamsptr
+pxendpoint
 pxexpiredtimer
 pxfilesize
 pxftpclient
@@ -2189,6 +2197,7 @@ pxhigherprioritytaskwoken
 pxincomingpacket
 pxincomingpublishcallback
 pxindex
+pxinterface
 pxisrfunction
 pxknownmessage
 pxlist
@@ -2196,6 +2205,7 @@ pxmbedpkcontext
 pxmbedtlspkctx
 pxmetrics
 pxmqttcontext
+pxmyinterface
 pxnetif
 pxnetworkbuffer
 pxnetworkcontext
@@ -2298,6 +2308,7 @@ readme
 readonly
 readtotaltimeoutconstant
 readtotaltimeoutmultiplier
+realtek
 reblocked
 receiveloop
 receivetimeout
@@ -2601,6 +2612,7 @@ stm
 stor
 str
 strcasecmp
+strcasestr
 strin
 stringification
 strintrx
@@ -2615,6 +2627,7 @@ subsquent
 succeds
 suicidaltasks
 summarise
+sv
 svc
 svr
 sw
@@ -3125,6 +3138,7 @@ vbuttonisrhandler
 vcellularconnecttask
 vcellulardemotask
 vclearemactxbuffer
+vcmp
 vconfiguretimerforruntimestats
 vcore
 vcreatesuicidaltask
@@ -3178,6 +3192,7 @@ vmaindeleteme
 vmainpoststopprocessing
 vmemchecktask
 vmov
+vmrs
 vodafone
 votademotask
 vpartestinitialise
@@ -3377,8 +3392,10 @@ xdoremove
 xe
 xeb
 xechoserveraddress
+xemacindex
 xemaclite
 xend
+xendpoints
 xerrorcount
 xerrordetected
 xerrorline

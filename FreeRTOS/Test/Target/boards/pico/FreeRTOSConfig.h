@@ -99,8 +99,8 @@
  */
 
 /* SMP port only */
-#define configNUMBER_OF_CORES              2
-#define configTICK_CORE                    1
+#define configNUMBER_OF_CORES                2
+#define configTICK_CORE                      1
 
 /* RP2040 specific */
 #define configSUPPORT_PICO_SYNC_INTEROP    1

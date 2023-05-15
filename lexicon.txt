@@ -2627,6 +2627,7 @@ subsquent
 succeds
 suicidaltasks
 summarise
+suspendall
 sv
 svc
 svr

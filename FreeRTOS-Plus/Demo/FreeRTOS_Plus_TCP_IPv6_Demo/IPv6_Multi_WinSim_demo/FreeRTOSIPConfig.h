@@ -307,6 +307,7 @@ extern void vLoggingPrintf( const char * pcFormatString,
 #define ipconfigUSE_IPv6                    1
 #define ipconfigUSE_IPv6                    1
 #define ipconfigUSE_RA                      1
+#define ipconfigUSE_DHCPv6                  0
 #define ipconfigSUPPORT_OUTGOING_PINGS      1
 
 #endif /* FREERTOS_IP_CONFIG_H */

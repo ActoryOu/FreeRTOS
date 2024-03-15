@@ -216,13 +216,13 @@ int main( void )
     pxWinPcap_FillInterfaceDescriptor( 0, &( xInterfaces[ 0 ] ) );
 
     /* === End-point 0 === */
-    FreeRTOS_FillEndPoint( &( xInterfaces[ 0 ] ), &( xEndPoints[ 0 ] ), ucIPAddress, ucNetMask, ucGatewayAddress, ucDNSServerAddress, ucMACAddress );
-    #if ( ipconfigUSE_DHCP != 0 )
-    {
-        /* End-point 0 wants to use DHCPv4. */
-        xEndPoints[ 0 ].bits.bWantDHCP = pdTRUE;
-    }
-    #endif /* ( ipconfigUSE_DHCP != 0 ) */
+    //FreeRTOS_FillEndPoint( &( xInterfaces[ 0 ] ), &( xEndPoints[ 0 ] ), ucIPAddress, ucNetMask, ucGatewayAddress, ucDNSServerAddress, ucMACAddress );
+    //#if ( ipconfigUSE_DHCP != 0 )
+    //{
+    //    /* End-point 0 wants to use DHCPv4. */
+    //    xEndPoints[ 0 ].bits.bWantDHCP = pdTRUE;
+    //}
+    //#endif /* ( ipconfigUSE_DHCP != 0 ) */
 
     /*
      *     End-point-1 : public
@@ -281,7 +281,8 @@ int main( void )
             IPv6_Address_t xPrefix;
 
             FreeRTOS_inet_pton6( "fe80::", xPrefix.ucBytes );
-            FreeRTOS_inet_pton6( "fe80::7009", xIPAddress.ucBytes );
+            /* link-local address is converted by MAC address. -- converter https://ben.akrin.com/mac-address-to-ipv6-link-local-address-online-converter/ */
+            FreeRTOS_inet_pton6( "fe80::211:22ff:fe33:4441", xIPAddress.ucBytes );
 
             FreeRTOS_FillEndPoint_IPv6(
                 &( xInterfaces[ 0 ] ),
